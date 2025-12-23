@@ -1,0 +1,5 @@
+{
+  "name": "Cricket Auction Manager",
+  "description": "A comprehensive web application for managing cricket team players and conducting real-time auctions. Features include player and team management, a dynamic auction system with budget controls, and a full-featured admin panel.",
+  "requestFramePermissions": []
+}
