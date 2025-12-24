@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Player, Team, Bid, AuctionStatus, User, Role } from '../types';
-import { GoogleGenAI } from '@google/genai';
 import { toast } from 'react-hot-toast';
 import api from '../core/api';
 
@@ -20,7 +19,6 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, setTeams, currentU
   const [currentBid, setCurrentBid] = useState<Bid | null>(null);
   const [bidHistory, setBidHistory] = useState<Bid[]>([]);
   const [timer, setTimer] = useState(10);
-  const [commentary, setCommentary] = useState("The auction is about to begin. Get ready for some excitement!");
   
   // Race condition safety
   const [isBidInFlight, setIsBidInFlight] = useState(false);
@@ -31,21 +29,6 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, setTeams, currentU
   const isManager = currentUser?.role === Role.MANAGER;
 
   const currentPlayer = allPlayers[currentPlayerIndex];
-
-  const generateCommentary = useCallback(async (context: string) => {
-    try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-        const prompt = `You are a cricket auction commentator. Provide a short, exciting, one-sentence commentary for the following situation: ${context}`;
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt
-        });
-        setCommentary(response.text);
-    } catch (error) {
-        console.error("Commentary generation failed:", error);
-        setCommentary("The atmosphere is electric!");
-    }
-  }, []);
 
   const startAuction = async () => {
     if (!isAdmin) return;
@@ -62,7 +45,6 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, setTeams, currentU
       setCurrentBid(null);
       setBidHistory([]);
       setTimer(10);
-      generateCommentary(`The auction starts with ${currentPlayer.name}, a ${currentPlayer.role}.`);
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Failed to start auction';
       toast.error(message);
@@ -72,7 +54,6 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, setTeams, currentU
   const nextPlayer = () => {
     if (currentPlayerIndex + 1 >= allPlayers.length) {
       setStatus(AuctionStatus.FINISHED);
-      generateCommentary("And that's a wrap! The auction has concluded. What a fantastic event!");
       return;
     }
     const nextIndex = currentPlayerIndex + 1;
@@ -81,7 +62,6 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, setTeams, currentU
     setBidHistory([]);
     setTimer(10);
     setStatus(AuctionStatus.IN_PROGRESS);
-    generateCommentary(`${allPlayers[nextIndex].name} is next on the block! A promising ${allPlayers[nextIndex].role}.`);
   };
 
   const handleSold = useCallback(() => {
@@ -106,14 +86,12 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, setTeams, currentU
 
     setUnsoldPlayers(unsoldPlayers.filter(p => p.id !== currentPlayer.id));
     onDataChange?.();
-    generateCommentary(`Sold! ${currentPlayer.name} goes to ${currentBid.team.name} for an incredible $${currentBid.amount.toLocaleString()}!`);
-  }, [currentBid, currentPlayer, setTeams, unsoldPlayers, generateCommentary, onDataChange]);
+  }, [currentBid, currentPlayer, setTeams, unsoldPlayers, onDataChange]);
 
   const handleUnsold = useCallback(() => {
     setStatus(AuctionStatus.PLAYER_UNSOLD);
     onDataChange?.();
-    generateCommentary(`No bidders for ${currentPlayer.name}. He goes unsold for now.`);
-  }, [currentPlayer, generateCommentary, onDataChange]);
+  }, [onDataChange]);
 
   const placeBid = async (team: Team, amount: number) => {
     // ===== ATOMIC BID LOCK =====
@@ -165,9 +143,6 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, setTeams, currentU
       setTimer(10); // Reset timer on successful bid
       lastBidTimestampRef.current = Date.now();
 
-      generateCommentary(
-        `A new bid from ${team.name}! The price for ${currentPlayer.name} is now $${amount.toLocaleString()}!`
-      );
     } catch (error: any) {
       // ===== BACKEND REJECTION =====
       // Backend rejects the bid for a reason
@@ -313,7 +288,7 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, setTeams, currentU
         <div className="flex flex-col sm:flex-row sm:justify-around items-center text-center my-8 p-4 bg-gray-900/50 rounded-lg gap-4 sm:gap-0">
           <div className="w-full sm:w-auto">
             <p className="text-gray-400 text-sm">Base Price</p>
-            <p className="text-2xl font-bold text-green-400 font-mono">${currentPlayer?.base_price.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-green-400 font-mono">₹{currentPlayer?.base_price.toLocaleString()}</p>
           </div>
           <div className="border-b-2 sm:border-l-2 border-gray-700 h-auto sm:h-16 w-full sm:w-auto"></div>
            <div className="w-full sm:w-auto">
@@ -323,13 +298,9 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, setTeams, currentU
            <div className="border-b-2 sm:border-l-2 border-gray-700 h-auto sm:h-16 w-full sm:w-auto"></div>
           <div className="w-full sm:w-auto">
             <p className="text-gray-400 text-sm">Current Bid</p>
-            <p className="text-2xl font-bold text-green-400 font-mono">${currentBid?.amount.toLocaleString() || '---'}</p>
+            <p className="text-2xl font-bold text-green-400 font-mono">₹{currentBid?.amount.toLocaleString() || '---'}</p>
             <p className="text-xs text-gray-500">{currentBid?.team.name || 'No bids yet'}</p>
           </div>
-        </div>
-        
-        <div className='my-4 p-4 bg-gray-900/50 rounded-lg text-center'>
-            <p className='text-lg italic text-cyan-300'>"{commentary}"</p>
         </div>
         
         { (isAdmin || isManager) && 
@@ -389,7 +360,7 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, setTeams, currentU
             {bidHistory.map((bid, index) => (
               <li key={index} className="flex justify-between p-2 bg-gray-700/50 rounded">
                 <span className="font-semibold">{bid.team.name}</span>
-                <span className="font-mono text-green-300">${bid.amount.toLocaleString()}</span>
+                <span className="font-mono text-green-300">₹{bid.amount.toLocaleString()}</span>
               </li>
             ))}
              {bidHistory.length === 0 && <p className='text-gray-500 text-center mt-8'>No bids placed yet.</p>}

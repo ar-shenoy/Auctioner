@@ -43,7 +43,7 @@ const Teams: React.FC<TeamsProps> = ({ teams, currentUser, onDataChange }) => {
               {team.description && <p className="text-sm text-gray-400 mb-4">{team.description}</p>}
               <div className="mb-4">
                 <p className="text-sm font-medium text-gray-300">Budget Spent</p>
-                <p className="text-2xl font-bold text-green-400 font-mono">${team.budget_spent.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-green-400 font-mono">₹{team.budget_spent.toLocaleString()}</p>
               </div>
             </div>
             {isAdmin && (
