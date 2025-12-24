@@ -87,7 +87,7 @@ api.interceptors.response.use(
 
       // Clear token and redirect to login
       localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
+      localStorage.removeItem('cricket-ops-user');
 
       // Redirect to login if not already there
       if (!window.location.pathname.includes('login')) {
