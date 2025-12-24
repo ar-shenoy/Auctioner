@@ -14,7 +14,7 @@ from app.dependencies.rbac import require_admin, require_any_authenticated_user
 router = APIRouter(prefix="/players", tags=["players"])
 
 
-@router.post("", response_model=PlayerRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin)])
+@router.post("", response_model=PlayerRead, status_code=status.HTTP_201_CREATED)
 async def create_player_endpoint(payload: PlayerCreate, session: AsyncSession = Depends(get_session)):
     player = await create_player(session, payload)
     return player

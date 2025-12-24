@@ -64,10 +64,6 @@ const LiveMatch: React.FC<LiveMatchProps> = ({ teams, onStatUpdate, currentUser 
           toast.error("Please select two teams");
           return;
       }
-      if (t1.players.length === 0 || t2.players.length === 0) {
-          toast.error("Both teams must have players");
-          return;
-      }
             // Create match on backend
             (async () => {
                 try {

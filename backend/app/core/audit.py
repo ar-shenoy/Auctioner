@@ -7,6 +7,7 @@ Usage: await log_audit(session, user, action, entity_type, entity_id, details=No
 """
 from typing import Optional
 from datetime import datetime
+from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert
@@ -25,6 +26,7 @@ async def log_audit(
 ) -> None:
     now = datetime.utcnow()
     stmt = insert(AuditLog).values(
+        id=str(uuid4()),
         user_id=user_id,
         action=action,
         entity_type=entity_type,
@@ -34,4 +36,3 @@ async def log_audit(
         timestamp=now,
     )
     await session.execute(stmt)
-    await session.commit()

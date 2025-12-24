@@ -1,32 +1,72 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import Players from './pages/Players';
 import Teams from './pages/Teams';
 import Auction from './pages/Auction';
 import Simulation from './pages/Simulation';
 import LiveMatch from './pages/LiveMatch';
+import PlayerRegistration from './pages/PlayerRegistration';
 import { Page, Player, Team, User, Role } from './types';
-import { getPlayers, getTeams, updatePlayerStats } from './core/db';
-import { Toaster, toast } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 import AdminPanel from './components/AdminPanel';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import { getCurrentUser, login as apiLogin, logout as apiLogout } from './core/auth';
+import { getCurrentUser, getMe, logout as apiLogout } from './core/auth';
 import HamburgerIcon from './components/icons/HamburgerIcon';
+import api from './core/api';
 
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(getCurrentUser());
   const [currentPage, setCurrentPage] = useState<Page>(Page.Dashboard);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoadingUser, setIsLoadingUser] = useState(!currentUser);
   
-  const [players, setPlayers] = useState<Player[]>(getPlayers());
-  const [teams, setTeams] = useState<Team[]>(getTeams());
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+
+  // Restore session from backend on app load
+  useEffect(() => {
+    if (!currentUser && isLoadingUser) {
+      getMe().then((user) => {
+        if (user) setCurrentUser(user);
+        setIsLoadingUser(false);
+      });
+    } else {
+      setIsLoadingUser(false);
+    }
+  }, []);
+
+  // Fetch data from backend when user is authenticated
+  useEffect(() => {
+    if (currentUser) {
+      fetchData();
+    }
+  }, [currentUser]);
+
+  const fetchData = async () => {
+    setIsLoadingData(true);
+    try {
+      const [playersRes, teamsRes] = await Promise.all([
+        api.get('/players'),
+        api.get('/teams'),
+      ]);
+      setPlayers(playersRes.data);
+      setTeams(teamsRes.data);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      setPlayers([]);
+      setTeams([]);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
 
   const handleLogin = (user: User) => {
-    apiLogin(user);
     setCurrentUser(user);
   };
 
@@ -34,24 +74,34 @@ const App: React.FC = () => {
     apiLogout();
     setCurrentUser(null);
     setCurrentPage(Page.Dashboard);
+    setPlayers([]);
+    setTeams([]);
   };
   
   const handlePlayerStatsUpdate = (playerId: string, performance: { runs?: number, wickets?: number }) => {
-      const updatedPlayers = updatePlayerStats(playerId, performance);
-      setPlayers(updatedPlayers);
+    // Stats updates now happen via backend API calls in LiveMatch
+    // Refresh data after update
+    fetchData();
   };
 
-
   const renderPage = () => {
+    if (isLoadingData) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-gray-400">Loading...</div>
+        </div>
+      );
+    }
+
     switch (currentPage) {
       case Page.Dashboard:
         return <Dashboard players={players} teams={teams} />;
       case Page.Players:
-        return <Players players={players} setPlayers={setPlayers} currentUser={currentUser} />;
+        return <Players players={players} setPlayers={setPlayers} currentUser={currentUser} onDataChange={fetchData} />;
       case Page.Teams:
-        return <Teams teams={teams} setTeams={setTeams} currentUser={currentUser} />;
+        return <Teams teams={teams} setTeams={setTeams} currentUser={currentUser} onDataChange={fetchData} />;
       case Page.Auction:
-        return <Auction allPlayers={players} teams={teams} setTeams={setTeams} currentUser={currentUser} />;
+        return <Auction allPlayers={players} teams={teams} setTeams={setTeams} currentUser={currentUser} onDataChange={fetchData} />;
       case Page.Simulation:
         return <Simulation teams={teams} />;
       case Page.LiveMatch:
@@ -65,6 +115,18 @@ const App: React.FC = () => {
   const urlParams = new URLSearchParams(queryString);
   if (urlParams.get('page') === 'register' && urlParams.get('token')) {
     return <Register token={urlParams.get('token')!} />;
+  }
+
+  if (urlParams.get('page') === 'player-register') {
+    return <PlayerRegistration />;
+  }
+
+  if (isLoadingUser) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    );
   }
 
   if (!currentUser) {

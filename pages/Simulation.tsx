@@ -27,11 +27,6 @@ const Simulation: React.FC<SimulationProps> = ({ teams }) => {
       return;
     }
     
-    if (team1.players.length < 2 || team2.players.length < 2) {
-        toast.error('Both teams must have at least 2 players to simulate a match.');
-        return;
-    }
-
     setIsLoading(true);
     setMatchResult(null);
     setTimeout(() => {

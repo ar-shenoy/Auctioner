@@ -1,2 +1,4 @@
 
-// This file is obsolete. Data is now managed in core/db.ts
+// This file is deprecated. All data is now managed through backend API calls.
+// See core/api.ts for API endpoints.
+export {};

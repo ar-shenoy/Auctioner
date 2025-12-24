@@ -25,10 +25,10 @@ const Register: React.FC<RegisterProps> = ({ token }) => {
     }
   }, [token]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!payload) return;
-    const newUser = handleRegistration(payload, username);
+    const newUser = await handleRegistration(payload, username, password);
     if (newUser) {
         // In a real app, you would redirect to login
         setTimeout(() => window.location.href = window.location.origin, 2000);

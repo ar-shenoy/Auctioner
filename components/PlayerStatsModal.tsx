@@ -27,7 +27,7 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-3xl font-bold text-white">{player.name}</h2>
-            <p className="text-gray-400">{player.role} | {player.country}</p>
+            <p className="text-gray-400">{player.role}</p>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -38,15 +38,13 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
-            <h3 className="text-xl font-semibold text-blue-400 border-b border-gray-700 pb-2 mb-3">Career Statistics</h3>
-            <StatItem label="Matches Played" value={player.stats.matchesPlayed} />
-            <StatItem label="Batting Average" value={player.stats.battingAverage.toFixed(2)} />
-            <StatItem label="Strike Rate" value={player.stats.strikeRate.toFixed(2)} />
-            <StatItem label="Wickets Taken" value={player.stats.wicketsTaken} />
-            <StatItem label="Economy Rate" value={player.stats.economyRate.toFixed(2)} />
+            <h3 className="text-xl font-semibold text-blue-400 border-b border-gray-700 pb-2 mb-3">Player Details</h3>
+            <StatItem label="Base Price" value={`$${player.base_price.toLocaleString()}`} />
+            <StatItem label="Status" value={player.status} />
+            <StatItem label="Team ID" value={player.team_id ? player.team_id.substring(0, 8) + '...' : 'Unassigned'} />
           </div>
           <div className="space-y-3">
-             <h3 className="text-xl font-semibold text-green-400 border-b border-gray-700 pb-2 mb-3">Match History</h3>
+             <h3 className="text-xl font-semibold text-green-400 border-b border-gray-700 pb-2 mb-3">Auction Details</h3>
              <div className="space-y-2">
                 {player.matchHistory.length > 0 ? player.matchHistory.map((perf, index) => (
                     <div key={index} className="bg-gray-700/50 p-3 rounded-lg text-sm">

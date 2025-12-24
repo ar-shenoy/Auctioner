@@ -35,8 +35,22 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
     
-    # CORS settings
-    cors_origins: list = Field(default=["http://localhost:5173"], alias="CORS_ORIGINS")
+    # CORS settings - read from environment, parse comma-separated string
+    cors_origins_str: str = Field(
+        default="http://localhost:3000,http://localhost:5173",
+        alias="CORS_ORIGINS"
+    )
+    
+    @property
+    def cors_origins(self) -> list:
+        """Parse CORS_ORIGINS from comma-separated string."""
+        if isinstance(self.cors_origins_str, list):
+            return self.cors_origins_str
+        return [
+            origin.strip() 
+            for origin in self.cors_origins_str.split(',') 
+            if origin.strip()
+        ]
     
     class Config:
         env_file = ".env"

@@ -26,6 +26,7 @@ from app.models import (
     MatchEvent,
 )
 from app.api.v1 import admin as admin_api
+from app.api.v1 import auth as auth_api
 from app.api.v1 import teams as teams_api
 from app.api.v1 import players as players_api
 from app.api.v1 import auctions as auctions_api
@@ -85,13 +86,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Register centralized error handlers BEFORE adding middleware
-register_error_handlers(app)
-
-# Add logging middleware (after error handlers for proper error logging)
-app.add_middleware(RequestLoggingMiddleware)
-
-# CORS middleware
+# CORS middleware - MUST be added before error handlers to handle preflight
+# Origins loaded from CORS_ORIGINS environment variable
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -99,6 +95,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+logger.info(f"✓ CORS enabled for origins: {settings.cors_origins}")
+
+# Register centralized error handlers BEFORE adding middleware
+register_error_handlers(app)
+
+# Add logging middleware (after error handlers for proper error logging)
+app.add_middleware(RequestLoggingMiddleware)
 
 
 # ==================== Health & Readiness Endpoints ====================
@@ -168,6 +171,7 @@ if __name__ == "__main__":
 
 
 # Include admin API routes
+app.include_router(auth_api.router, prefix="/api/v1")
 app.include_router(admin_api.router, prefix="/api/v1")
 app.include_router(teams_api.router, prefix="/api/v1")
 app.include_router(players_api.router, prefix="/api/v1")

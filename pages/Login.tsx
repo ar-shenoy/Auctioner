@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { User } from '../types';
-import { findUserByUsername } from '../core/db';
+import { login } from '../core/auth';
 import { toast } from 'react-hot-toast';
 
 interface LoginProps {
@@ -9,18 +9,21 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = findUserByUsername(username);
-    if (user) {
-      // In a real app, you would verify the password hash
-      toast.success(`Welcome back, ${user.username}!`);
-      onLogin(user);
-    } else {
-      toast.error('Invalid username or password.');
+    setIsLoading(true);
+    try {
+      const user = await login(email, password);
+      if (user) {
+        toast.success(`Welcome back, ${user.username}!`);
+        onLogin(user);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -33,14 +36,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-sm font-medium text-gray-400">Username</label>
+            <label className="block text-sm font-medium text-gray-400">Email</label>
             <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., admin"
+              placeholder="admin@example.com"
               required
+              disabled={isLoading}
             />
           </div>
           <div>
@@ -50,23 +54,35 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 mt-1 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Any password will work"
+              placeholder="Enter password"
               required
+              disabled={isLoading}
             />
           </div>
           <div>
             <button
               type="submit"
-              className="w-full px-4 py-2 font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500"
+              disabled={isLoading}
+              className="w-full px-4 py-2 font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 disabled:opacity-50"
             >
-              Sign In
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </div>
         </form>
          <div className="text-center text-xs text-gray-500">
-            <p>Use 'admin', 'manager', or 'player' as username.</p>
-            <p>Registration is by invite link only.</p>
-        </div>
+            <p>Sign in with valid credentials from the backend.</p>
+         </div>
+         <div className="pt-4 border-t border-gray-700">
+            <p className="text-center text-sm text-gray-400 mb-3">
+              Not an admin? 
+            </p>
+            <a
+              href="?page=player-register"
+              className="block w-full text-center px-4 py-2 font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors duration-200"
+            >
+              Register as a Player
+            </a>
+         </div>
       </div>
     </div>
   );

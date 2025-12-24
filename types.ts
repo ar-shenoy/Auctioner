@@ -37,22 +37,24 @@ export interface PlayerStats {
 export interface Player {
   id: string;
   name: string;
-  country: string;
-  age: number;
-  role: 'Batsman' | 'Bowler' | 'All-Rounder' | 'Wicketkeeper';
-  battingStyle?: string;
-  bowlingStyle?: string;
-  basePrice: number;
-  stats: PlayerStats;
-  matchHistory: PlayerPerformance[];
+  role: string;
+  base_price: number;
+  team_id?: string | null;
+  user_id?: string | null;
+  sold_price?: number | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Team {
   id: string;
   name: string;
-  owner: string;
-  budget: number;
-  players: Player[];
+  description?: string;
+  manager_id: string;
+  budget_spent: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Bid {

@@ -1,20 +1,22 @@
-"""Password hashing utilities using passlib (bcrypt).
+"""Password hashing utilities using bcrypt directly.
 
-This file provides a small, well-tested wrapper around `passlib` for
-hashing and verifying passwords. It's used by the authentication layer
-(Phase 3) but contains no API or business logic.
+This file provides a wrapper around bcrypt for hashing and verifying passwords.
+It's used by the authentication layer but contains no API or business logic.
 """
 
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 
 def hash_password(password: str) -> str:
     """Hash a plaintext password."""
-    return pwd_context.hash(password)
+    # Truncate to 72 bytes (bcrypt limit) and hash
+    password_bytes = password[:72].encode('utf-8')
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(password_bytes, salt).decode('utf-8')
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plaintext password against the stored hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    # Truncate to 72 bytes (bcrypt limit)
+    password_bytes = plain_password[:72].encode('utf-8')
+    return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
