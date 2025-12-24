@@ -90,12 +90,16 @@ app = FastAPI(
 # Origins loaded from CORS_ORIGINS environment variable
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_origin_regex=settings.cors_origins_regex,
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 logger.info(f"✓ CORS enabled for origins: {settings.cors_origins}")
+if settings.cors_origins_regex:
+    logger.info(f"✓ CORS regex enabled: {settings.cors_origins_regex}")
 
 # Register centralized error handlers BEFORE adding middleware
 register_error_handlers(app)
