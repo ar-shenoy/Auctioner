@@ -57,7 +57,7 @@ const Players: React.FC<PlayersProps> = ({ players, currentUser, onDataChange })
                       {player.name}
                     </th>
                     <td className="px-6 py-4">{player.role}</td>
-                    <td className="px-6 py-4 font-mono text-green-400">${player.base_price.toLocaleString()}</td>
+                    <td className="px-6 py-4 font-mono text-green-400">₹{player.base_price.toLocaleString()}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
                         player.status === 'available' ? 'bg-green-600/30 text-green-400' :
