@@ -20,7 +20,7 @@ const Dashboard: React.FC<DashboardProps> = ({ players, teams }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="Total Players" value={totalPlayers} icon={<PlayerIcon className="h-8 w-8" />} />
                 <StatCard title="Total Teams" value={teams.length} icon={<TeamIcon className="h-8 w-8" />} />
-                <StatCard title="Total Budget Spent" value={`$${(totalBudgetSpent / 1000000).toFixed(2)}M`} icon={
+                <StatCard title="Total Budget Spent" value={`₹${(totalBudgetSpent / 1000000).toFixed(2)}M`} icon={
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01" />
                     </svg>
@@ -45,7 +45,7 @@ const Dashboard: React.FC<DashboardProps> = ({ players, teams }) => {
                                         <p className="font-semibold">{player.name}</p>
                                         <p className="text-sm text-gray-400">{player.role}</p>
                                     </div>
-                                    <span className="font-mono text-green-400">${player.base_price.toLocaleString()}</span>
+                                    <span className="font-mono text-green-400">₹{player.base_price.toLocaleString()}</span>
                                 </li>
                             ))}
                         </ul>
@@ -61,7 +61,7 @@ const Dashboard: React.FC<DashboardProps> = ({ players, teams }) => {
                                 <li key={team.id}>
                                     <div className="flex justify-between mb-1">
                                         <span className="text-base font-medium text-white">{team.name}</span>
-                                        <span className="text-sm font-medium text-gray-400">${team.budget_spent.toLocaleString()} spent</span>
+                                        <span className="text-sm font-medium text-gray-400">₹{team.budget_spent.toLocaleString()} spent</span>
                                     </div>
                                     <div className="w-full bg-gray-700 rounded-full h-2.5">
                                         <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${(team.budget_spent / 2000000) * 100}%` }}></div>
