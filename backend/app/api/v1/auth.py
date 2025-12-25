@@ -8,7 +8,7 @@ from uuid import uuid4
 from app.db.session import get_session
 from app.models import User
 from app.schemas.auth import LoginRequest, LoginResponse, UserMeResponse, RegisterRequest
-from app.core.hash import verify_password, get_password_hash
+from app.core.hash import verify_password, hash_password
 from app.core.security import create_access_token
 from app.dependencies.rbac import get_current_user
 from app.core.audit import log_audit
@@ -39,7 +39,7 @@ async def register(
         id=user_id,
         email=f"{payload.username}@example.com",  # Placeholder email as frontend doesn't send it
         username=payload.username,
-        password_hash=get_password_hash(payload.password),
+        password_hash=hash_password(payload.password),
         role=payload.role,
         is_active=True,
         full_name=payload.username,
