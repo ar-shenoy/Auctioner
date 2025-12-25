@@ -52,15 +52,19 @@ class Settings(BaseSettings):
         """Parse CORS_ORIGINS from comma-separated string."""
         if isinstance(self.cors_origins_str, list):
             return self.cors_origins_str
+
+        # Robust parsing: handle JSON-like strings (e.g., '["http://a.com"]') or comma-separated
+        cleaned = self.cors_origins_str.strip(" []'\"")
         return [
-            origin.strip() 
-            for origin in self.cors_origins_str.split(',') 
-            if origin.strip()
+            origin.strip(" \"'")
+            for origin in cleaned.split(',')
+            if origin.strip(" \"'")
         ]
     
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 @lru_cache()
