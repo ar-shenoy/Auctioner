@@ -121,7 +121,7 @@ const PlayerRegistration: React.FC = () => {
           {/* Base Price */}
           <div>
             <label htmlFor="basePrice" className="block text-sm font-medium text-gray-300 mb-1">
-              Base Price ($) *
+              Base Price (₹) *
             </label>
             <input
               id="basePrice"

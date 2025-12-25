@@ -41,6 +41,12 @@ class Settings(BaseSettings):
         alias="CORS_ORIGINS"
     )
     
+    # CORS Regex - for Vercel preview deployments
+    cors_origins_regex: str | None = Field(
+        default=None,
+        alias="CORS_ORIGINS_REGEX"
+    )
+
     @property
     def cors_origins(self) -> list:
         """Parse CORS_ORIGINS from comma-separated string."""

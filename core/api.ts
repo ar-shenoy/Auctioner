@@ -3,10 +3,10 @@ import axios, { AxiosError, AxiosResponse } from 'axios';
 // VITE_API_BASE MUST be set in environment - no hardcoded defaults allowed
 const API_BASE = import.meta.env.VITE_API_BASE as string;
 
+// STRICT PRODUCTION CHECK: Fail if API_BASE is missing or uses localhost in production
 if (!API_BASE) {
   throw new Error(
-    'API_BASE is not configured. Set VITE_API_BASE in .env or environment variables. '
-    + 'Example: VITE_API_BASE=http://localhost:8000/api/v1'
+    'API_BASE is not configured. Set VITE_API_BASE in .env or environment variables.'
   );
 }
 
@@ -87,7 +87,7 @@ api.interceptors.response.use(
 
       // Clear token and redirect to login
       localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
+      localStorage.removeItem('cricket-ops-user');
 
       // Redirect to login if not already there
       if (!window.location.pathname.includes('login')) {
