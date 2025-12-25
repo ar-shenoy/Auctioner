@@ -4,15 +4,69 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from uuid import uuid4
 from app.db.session import get_session
 from app.models import User
-from app.schemas.auth import LoginRequest, LoginResponse, UserMeResponse
-from app.core.hash import verify_password
+from app.schemas.auth import LoginRequest, LoginResponse, UserMeResponse, RegisterRequest
+from app.core.hash import verify_password, get_password_hash
 from app.core.security import create_access_token
 from app.dependencies.rbac import get_current_user
 from app.core.audit import log_audit
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post("/register", response_model=UserMeResponse, status_code=status.HTTP_201_CREATED)
+async def register(
+    payload: RegisterRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Register a new user.
+    Open registration for now to support the frontend invite flow.
+    """
+    # Check if user exists
+    result = await session.execute(select(User).where(User.username == payload.username))
+    if result.scalars().first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already taken",
+        )
+
+    # Create user
+    user_id = str(uuid4())
+    user = User(
+        id=user_id,
+        email=f"{payload.username}@example.com",  # Placeholder email as frontend doesn't send it
+        username=payload.username,
+        password_hash=get_password_hash(payload.password),
+        role=payload.role,
+        is_active=True,
+        full_name=payload.username,
+    )
+
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
+    # Audit log
+    await log_audit(
+        session=session,
+        user_id=user.id,
+        action="register",
+        entity_type="user",
+        entity_id=user.id,
+        details=f"role={user.role}",
+    )
+
+    return UserMeResponse(
+        id=user.id,
+        email=user.email,
+        username=user.username,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
+    )
 
 
 @router.post("/login", response_model=LoginResponse)
