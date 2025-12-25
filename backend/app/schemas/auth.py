@@ -9,6 +9,15 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RegisterRequest(BaseModel):
+    """Registration request payload."""
+    username: str
+    password: str
+    role: str
+    team_id: str | None = None
+    token: str | None = None  # Optional for now, to support legacy flow
+
+
 class LoginResponse(BaseModel):
     """Login response with token and user info."""
     access_token: str

@@ -57,10 +57,15 @@ const App: React.FC = () => {
       ]);
       setPlayers(playersRes.data);
       setTeams(teamsRes.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch data:', error);
-      setPlayers([]);
-      setTeams([]);
+      // HARDENING: If auth fails, force logout to break 403 loop
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        handleLogout();
+      } else {
+        setPlayers([]);
+        setTeams([]);
+      }
     } finally {
       setIsLoadingData(false);
     }
