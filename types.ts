@@ -1,8 +1,8 @@
 
 export enum Role {
-  ADMIN = "Admin",
-  MANAGER = "Team Manager",
-  PLAYER = "Player",
+  ADMIN = "admin",
+  MANAGER = "team_manager",
+  PLAYER = "player",
 }
 
 export interface User {
