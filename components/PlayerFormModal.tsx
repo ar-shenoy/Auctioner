@@ -23,7 +23,7 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onClose, onSu
     matches_played: player?.matches_played || 0,
     runs_scored: player?.runs_scored || 0,
     wickets_taken: player?.wickets_taken || 0,
-    base_price: player?.base_price || 2000000,
+    base_price: player?.base_price || 0,
     phone_number: player?.phone_number || '',
     profile_photo_url: player?.profile_photo_url || '',
     is_approved: player?.is_approved ?? true, // Default true for admin
@@ -46,11 +46,18 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onClose, onSu
     e.preventDefault();
     setIsLoading(true);
     try {
+      const payload = {
+        ...formData,
+        batting_style: formData.batting_style || null,
+        bowling_style: formData.bowling_style || null,
+        special_skills: formData.special_skills || null,
+      };
+
       if (player) {
-        await api.put(`/players/${player.id}`, formData);
+        await api.put(`/players/${player.id}`, payload);
         toast.success("Player updated");
       } else {
-        await api.post('/players', formData);
+        await api.post('/players', payload);
         toast.success("Player created");
       }
       onSuccess();
@@ -93,10 +100,6 @@ const PlayerFormModal: React.FC<PlayerFormModalProps> = ({ player, onClose, onSu
                     <div>
                         <label className="block text-gray-400 text-sm font-bold mb-1">City</label>
                         <input name="city" value={formData.city} onChange={handleChange} className="w-full bg-gray-700 rounded p-2 text-white border border-gray-600" />
-                    </div>
-                    <div>
-                        <label className="block text-gray-400 text-sm font-bold mb-1">State</label>
-                        <input name="state" value={formData.state} onChange={handleChange} className="w-full bg-gray-700 rounded p-2 text-white border border-gray-600" />
                     </div>
                      <div>
                         <label className="block text-gray-400 text-sm font-bold mb-1">Date of Birth</label>
