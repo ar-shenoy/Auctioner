@@ -41,7 +41,7 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({ onClose, onSuccess, t
         const payload = {
             name,
             description,
-            manager_id: managerId || null
+            manager_id: managerId ? managerId : null
         };
 
         if (team) {

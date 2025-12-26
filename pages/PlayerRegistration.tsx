@@ -197,7 +197,7 @@ const PlayerRegistration: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Base Price (₹) *</label>
-                        <input name="base_price" type="number" min="0" step="100000" value={formData.base_price} onChange={handleChange} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-green-400" required />
+                        <input name="base_price" type="number" min="0" value={formData.base_price} onChange={handleChange} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-green-400" required />
                         <p className="text-xs text-gray-500 mt-1">Minimum bid to start auction</p>
                     </div>
                     <div>

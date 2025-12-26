@@ -19,12 +19,8 @@ from app.models.team import Team
 from app.models.player import Player
 from app.models.auction import Auction
 from app.models.bid import Bid
-from app.models.match import Match
-from app.models.match_event import MatchEvent
 from app.models.tournament import Tournament
 from app.models.audit_log import AuditLog
-from app.models.player_match_stats import PlayerMatchStats
-from app.models.player_career_stats import PlayerCareerStats
 
 __all__ = [
     "BaseModel",
@@ -44,10 +40,6 @@ __all__ = [
     "Player",
     "Auction",
     "Bid",
-    "Match",
-    "MatchEvent",
     "Tournament",
     "AuditLog",
-    "PlayerMatchStats",
-    "PlayerCareerStats",
 ]
