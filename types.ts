@@ -45,6 +45,10 @@ export interface Player {
   status: string;
   created_at: string;
   updated_at: string;
+  profile_photo_url?: string | null;
+  city?: string | null;
+  state?: string | null;
+  phone_number?: string | null;
 }
 
 export interface Team {
@@ -100,5 +104,7 @@ export enum Page {
     Teams = "teams",
     Auction = "auction",
     Simulation = "simulation",
-    LiveMatch = "live-match"
+    LiveMatch = "live-match",
+    PlayerRegistration = "player-registration",
+    Login = "login"
 }

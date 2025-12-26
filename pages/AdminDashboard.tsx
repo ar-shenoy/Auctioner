@@ -10,7 +10,7 @@ interface DashboardProps {
   teams: Team[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ players, teams }) => {
+const AdminDashboard: React.FC<DashboardProps> = ({ players, teams }) => {
     const totalBudgetSpent = teams.reduce((acc, team) => acc + team.budget_spent, 0);
     const totalPlayers = players.length;
     const playersPerTeam = teams.length > 0 ? (totalPlayers / teams.length) : 0;
@@ -76,4 +76,4 @@ const Dashboard: React.FC<DashboardProps> = ({ players, teams }) => {
     );
 };
 
-export default Dashboard;
+export default AdminDashboard;
