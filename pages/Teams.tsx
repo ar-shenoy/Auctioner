@@ -1,8 +1,7 @@
 
 import React, { useState } from 'react';
 import { Team, User, Role, Player } from '../types';
-import { toast } from 'react-hot-toast';
-import api from '../core/api';
+import CreateTeamModal from '../components/CreateTeamModal';
 
 interface TeamsProps {
   teams: Team[];
@@ -15,20 +14,22 @@ interface TeamsProps {
 const Teams: React.FC<TeamsProps> = ({ teams, players, currentUser, onDataChange }) => {
   const isAdmin = currentUser?.role === Role.ADMIN;
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
-  const handleEditTeam = async (team: Team, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent opening modal
-    const newName = prompt('Edit team name:', team.name);
-    if (!newName || newName === team.name) return;
+  const handleCreateClick = () => {
+      setEditingTeam(null);
+      setIsModalOpen(true);
+  };
 
-    try {
-      await api.put(`/teams/${team.id}`, { name: newName });
-      toast.success('Team updated');
-      onDataChange?.();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to update team';
-      toast.error(message);
-    }
+  const handleEditClick = (team: Team, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setEditingTeam(team);
+      setIsModalOpen(true);
+  };
+
+  const handleSuccess = () => {
+      if (onDataChange) onDataChange();
   };
 
   const getTeamSquad = (teamId: string) => {
@@ -37,6 +38,20 @@ const Teams: React.FC<TeamsProps> = ({ teams, players, currentUser, onDataChange
 
   return (
     <>
+        {isAdmin && (
+            <div className="flex justify-end mb-6">
+                <button
+                    onClick={handleCreateClick}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-colors flex items-center"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
+                    Create Team
+                </button>
+            </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {teams.length === 0 ? (
             <div className="col-span-full text-center py-12">
@@ -61,8 +76,8 @@ const Teams: React.FC<TeamsProps> = ({ teams, players, currentUser, onDataChange
                             </div>
                             {isAdmin && (
                                 <button
-                                    onClick={(e) => handleEditTeam(team, e)}
-                                    className="text-gray-500 hover:text-white p-1"
+                                    onClick={(e) => handleEditClick(team, e)}
+                                    className="text-gray-500 hover:text-white p-1 hover:bg-gray-700 rounded transition-colors"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
@@ -71,8 +86,8 @@ const Teams: React.FC<TeamsProps> = ({ teams, players, currentUser, onDataChange
                             )}
                         </div>
 
-                        <h3 className="text-xl font-bold text-white mb-1 group-hover:text-indigo-400 transition-colors">{team.name}</h3>
-                        <p className="text-xs text-gray-500 font-mono mb-6 uppercase tracking-wider">Manager ID: {team.manager_id.substring(0, 6)}...</p>
+                        <h3 className="text-xl font-bold text-white mb-1 group-hover:text-indigo-400 transition-colors truncate pr-2">{team.name}</h3>
+                        <p className="text-xs text-gray-500 font-mono mb-6 uppercase tracking-wider">Manager: {team.manager_id ? team.manager_id.substring(0, 8) : 'Unassigned'}</p>
 
                         <div className="space-y-3">
                             <div>
@@ -163,6 +178,14 @@ const Teams: React.FC<TeamsProps> = ({ teams, players, currentUser, onDataChange
                     </div>
                 </div>
             </div>
+        )}
+
+        {isModalOpen && (
+            <CreateTeamModal
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={handleSuccess}
+                team={editingTeam || undefined}
+            />
         )}
     </>
   );

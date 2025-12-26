@@ -6,6 +6,7 @@ import PlayerIcon from '../components/icons/PlayerIcon';
 import TeamIcon from '../components/icons/TeamIcon';
 import api from '../core/api';
 import { toast } from 'react-hot-toast';
+import UserManagement from '../components/UserManagement';
 
 interface DashboardProps {
   players: Player[];
@@ -33,7 +34,7 @@ const AdminDashboard: React.FC<DashboardProps> = ({ players, teams, onDataChange
     const handleReject = async (id: string) => {
         if (!window.confirm('Are you sure you want to reject (delete) this player?')) return;
         try {
-            await api.delete(`/players/${id}`); // or reject endpoint if exists
+            await api.delete(`/players/${id}`);
             toast.success('Player Rejected');
             if (onDataChange) onDataChange();
         } catch (error) {
@@ -155,6 +156,8 @@ const AdminDashboard: React.FC<DashboardProps> = ({ players, teams, onDataChange
                     )}
                 </div>
             </div>
+
+            <UserManagement />
         </div>
     );
 };

@@ -44,6 +44,7 @@ class PlayerCreate(BaseModel):
     user_id: Optional[UUID] = None
     team_id: Optional[UUID] = None
     status: Optional[str] = None
+    is_approved: Optional[bool] = None
 
 
 class PlayerUpdate(BaseModel):

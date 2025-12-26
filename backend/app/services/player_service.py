@@ -12,14 +12,23 @@ from app.schemas.player import PlayerCreate, PlayerUpdate
 
 
 async def create_player(session: AsyncSession, payload: PlayerCreate) -> Player:
+    data = payload.model_dump(exclude_unset=True)
+
+    # Handle UUIDs
+    if 'team_id' in data and data['team_id']:
+        data['team_id'] = str(data['team_id'])
+    if 'user_id' in data and data['user_id']:
+        data['user_id'] = str(data['user_id'])
+
+    # Default status
+    if 'status' not in data:
+        data['status'] = "available"
+
+    # Remove computed fields if any (none in Create)
+
     player = Player(
         id=str(uuid4()),
-        name=payload.name,
-        role=payload.role,
-        base_price=payload.base_price,
-        team_id=str(payload.team_id) if payload.team_id else None,
-        user_id=str(payload.user_id) if payload.user_id else None,
-        status="available",
+        **data
     )
     session.add(player)
     await session.commit()
@@ -42,16 +51,13 @@ async def update_player(session: AsyncSession, player_id: str, payload: PlayerUp
     if not player:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found")
 
-    if payload.name is not None:
-        player.name = payload.name
-    if payload.role is not None:
-        player.role = payload.role
-    if payload.base_price is not None:
-        player.base_price = payload.base_price
-    if payload.team_id is not None:
-        player.team_id = str(payload.team_id)
-    if payload.status is not None:
-        player.status = payload.status
+    update_data = payload.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        if key in ['team_id', 'user_id'] and value is not None:
+            setattr(player, key, str(value))
+        else:
+            setattr(player, key, value)
 
     session.add(player)
     await session.commit()

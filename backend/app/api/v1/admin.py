@@ -12,8 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
 from app.dependencies.rbac import require_admin
-from app.models import RegistrationToken
+from app.models import RegistrationToken, User, Team
 from app.schemas.admin import RegistrationTokenCreate, RegistrationTokenRead
+from app.schemas.auth import UserMeResponse
 from app.core.audit import log_audit
 
 
@@ -90,3 +91,22 @@ async def delete_registration_token(
     )
 
     return None
+
+
+@router.get("/users", response_model=List[UserMeResponse], dependencies=[Depends(require_admin)])
+async def list_users(session: AsyncSession = Depends(get_session)):
+    stmt = select(User, Team.id.label("team_id")).outerjoin(Team, Team.manager_id == User.id).order_by(User.username)
+    result = await session.execute(stmt)
+
+    response = []
+    for user, team_id in result:
+        response.append(UserMeResponse(
+            id=user.id,
+            email=user.email,
+            username=user.username,
+            full_name=user.full_name,
+            role=user.role,
+            is_active=user.is_active,
+            team_id=team_id
+        ))
+    return response
