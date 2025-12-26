@@ -34,6 +34,11 @@ export interface Player {
   state?: string | null;
   phone_number?: string | null;
   is_approved?: boolean;
+  matches_played?: number;
+  runs_scored?: number;
+  wickets_taken?: number;
+  batting_style?: string;
+  bowling_style?: string;
 }
 
 export interface Team {

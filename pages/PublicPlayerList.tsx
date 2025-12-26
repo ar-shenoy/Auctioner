@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Player, Team } from '../types';
+import PlayerStatsModal from '../components/PlayerStatsModal';
 
 interface PublicPlayerListProps {
   players: Player[];
@@ -8,6 +9,7 @@ interface PublicPlayerListProps {
 
 const PublicPlayerList: React.FC<PublicPlayerListProps> = ({ players, teams }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   // Filter players
   const filteredPlayers = players.filter(player => {
@@ -54,7 +56,11 @@ const PublicPlayerList: React.FC<PublicPlayerListProps> = ({ players, teams }) =
             const displayLocation = teamName || location;
 
             return (
-                <div key={player.id} className="bg-[#1f2937] border border-green-600/50 rounded-xl p-4 flex items-center relative hover:bg-[#2d3748] transition-colors shadow-lg group">
+                <div
+                    key={player.id}
+                    onClick={() => setSelectedPlayer(player)}
+                    className="bg-[#1f2937] border border-green-600/50 rounded-xl p-4 flex items-center relative hover:bg-[#2d3748] transition-all cursor-pointer shadow-lg group hover:shadow-green-900/20 hover:-translate-y-1"
+                >
                     {/* Avatar */}
                     <div className="flex-shrink-0">
                          <div className="h-16 w-16 rounded-full border-2 border-green-500 overflow-hidden bg-gray-700">
@@ -71,8 +77,8 @@ const PublicPlayerList: React.FC<PublicPlayerListProps> = ({ players, teams }) =
                     </div>
 
                     {/* Info */}
-                    <div className="ml-4 flex-1">
-                        <h3 className="text-green-400 font-bold text-lg truncate pr-6">{player.name}</h3>
+                    <div className="ml-4 flex-1 min-w-0">
+                        <h3 className="text-green-400 font-bold text-lg truncate pr-6 group-hover:text-green-300 transition-colors">{player.name}</h3>
                         <p className="text-red-500 font-mono text-sm font-bold tracking-wide">{displayId}</p>
                         <p className="text-gray-400 text-sm mt-0.5 uppercase tracking-wider font-semibold truncate">
                             {displayLocation}
@@ -94,6 +100,10 @@ const PublicPlayerList: React.FC<PublicPlayerListProps> = ({ players, teams }) =
           <div className="text-center text-gray-500 mt-12 text-lg">
               No players found matching "{searchTerm}"
           </div>
+      )}
+
+      {selectedPlayer && (
+        <PlayerStatsModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
       )}
     </div>
   );
