@@ -231,11 +231,11 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, currentUser, onDat
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-100px)]">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-100px)] h-auto">
       {/* Main Auction Stage (Left/Center) */}
       <div className="lg:col-span-8 flex flex-col gap-6">
           {/* Player Card */}
-          <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-2xl relative overflow-hidden flex-1 flex flex-col justify-center items-center text-center">
+          <div className="bg-gray-800 rounded-2xl p-4 sm:p-8 border border-gray-700 shadow-2xl relative overflow-hidden flex-1 flex flex-col justify-center items-center text-center min-h-[500px] sm:min-h-0">
               {/* Background Glow */}
               <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-transparent pointer-events-none"></div>
 
@@ -258,15 +258,15 @@ const Auction: React.FC<AuctionProps> = ({ allPlayers, teams, currentUser, onDat
                         </div>
                     </div>
 
-                    <h2 className="text-5xl font-black text-white mb-2 tracking-tight">{currentPlayer.name}</h2>
-                    <p className="text-gray-400 text-lg mb-8">{currentPlayer.city || 'Unknown Location'}</p>
+                    <h2 className="text-3xl sm:text-5xl font-black text-white mb-2 tracking-tight">{currentPlayer.name}</h2>
+                    <p className="text-gray-400 text-base sm:text-lg mb-6 sm:mb-8">{currentPlayer.city || 'Unknown Location'}</p>
 
-                    <div className="grid grid-cols-3 gap-8 w-full max-w-2xl bg-gray-900/50 p-6 rounded-xl border border-gray-700/50">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 w-full max-w-2xl bg-gray-900/50 p-4 sm:p-6 rounded-xl border border-gray-700/50">
                         <div>
                             <p className="text-gray-500 text-sm font-semibold uppercase tracking-wider mb-1">Base Price</p>
                             <p className="text-2xl font-mono text-white">₹{(currentPlayer.base_price/100000).toFixed(1)}L</p>
                         </div>
-                        <div className="border-x border-gray-700">
+                        <div className="border-x-0 sm:border-x border-t sm:border-t-0 border-b sm:border-b-0 border-gray-700 py-4 sm:py-0 my-4 sm:my-0">
                             <p className="text-gray-500 text-sm font-semibold uppercase tracking-wider mb-1">Current Bid</p>
                             <p className={`text-3xl font-mono font-bold ${currentBid ? 'text-green-400' : 'text-gray-600'}`}>
                                 {currentBid ? `₹${(currentBid.amount/100000).toFixed(1)}L` : '---'}
