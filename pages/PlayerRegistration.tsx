@@ -2,10 +2,8 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../core/api';
-import { useNavigate } from 'react-router-dom';
 
 const PlayerRegistration: React.FC = () => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     // Core Identity
     name: '',
@@ -77,7 +75,8 @@ const PlayerRegistration: React.FC = () => {
 
       // Redirect or clear
       setTimeout(() => {
-          navigate('/dashboard');
+          // Navigate to dashboard by clearing query params (App.tsx default)
+          window.location.href = '/';
       }, 3000);
 
     } catch (error: any) {
