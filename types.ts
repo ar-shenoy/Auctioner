@@ -18,22 +18,6 @@ export interface AuthContextType {
   logout: () => void;
 }
 
-export interface PlayerPerformance {
-  matchId: string;
-  runsScored: number;
-  ballsFaced: number;
-  wicketsTaken: number;
-  runsConceded: number;
-}
-
-export interface PlayerStats {
-  battingAverage: number;
-  strikeRate: number;
-  wicketsTaken: number;
-  economyRate: number;
-  matchesPlayed: number;
-}
-
 export interface Player {
   id: string;
   name: string;
@@ -49,6 +33,7 @@ export interface Player {
   city?: string | null;
   state?: string | null;
   phone_number?: string | null;
+  is_approved?: boolean;
 }
 
 export interface Team {
@@ -65,21 +50,6 @@ export interface Bid {
   team: Team;
   amount: number;
   timestamp: Date;
-}
-
-export interface MatchSummary {
-  team1: Team;
-  team2: Team;
-  winner: Team;
-  team1Score: number;
-  team1Wickets: number;
-  team1Overs: string;
-  team2Score: number;
-  team2Wickets: number;
-  team2Overs: string;
-  topScorer: { player: Player; runs: number; balls: number };
-  topBowler: { player: Player; wickets: number; runs: number };
-  commentary: string[];
 }
 
 export interface RegistrationTokenPayload {
@@ -103,8 +73,6 @@ export enum Page {
     Players = "players",
     Teams = "teams",
     Auction = "auction",
-    Simulation = "simulation",
-    LiveMatch = "live-match",
     PlayerRegistration = "player-registration",
     Login = "login"
 }
