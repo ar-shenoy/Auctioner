@@ -22,10 +22,10 @@ const PublicHeader: React.FC<PublicHeaderProps> = ({
       <div className="flex items-center space-x-3">
         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center overflow-hidden">
              {/* Placeholder for Logo */}
-             <span className="text-purple-900 font-bold text-xs">LOGO</span>
+             <span className="text-purple-900 font-bold text-xs">A</span>
         </div>
         <h1 className="text-yellow-400 text-3xl font-black tracking-wider italic drop-shadow-md">
-          CCL <span className="text-white">2026</span>
+          AUCTIONER
         </h1>
       </div>
 

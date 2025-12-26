@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # App settings
-    app_name: str = "Cricket Management Platform"
+    app_name: str = "AUCTIONER"
     app_version: str = "1.0.0"
     debug: bool = Field(default=False, alias="DEBUG")
     
