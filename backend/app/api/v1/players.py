@@ -28,6 +28,11 @@ async def create_player_endpoint(
     payload.status = PlayerStatusEnum.AVAILABLE.value
     payload.team_id = None
 
+    # Enforce is_approved=False for non-admins
+    is_admin = current_user and (current_user.role or "").lower() == RoleEnum.ADMIN.value
+    if not is_admin:
+        payload.is_approved = False
+
     user_id_for_audit = "public"
 
     if current_user:
