@@ -63,25 +63,25 @@ const Players: React.FC<PlayersProps> = ({ players, currentUser, onDataChange })
             <table className="w-full text-sm text-left text-gray-400">
               <thead className="text-xs text-gray-300 uppercase bg-gray-700/50">
                 <tr>
-                  <th scope="col" className="px-6 py-3">Player Name</th>
-                  <th scope="col" className="px-6 py-3">Role</th>
-                  <th scope="col" className="px-6 py-3">Base Price</th>
-                  <th scope="col" className="px-6 py-3">Status</th>
-                  {isAdmin && <th scope="col" className="px-6 py-3">Actions</th>}
+                  <th scope="col" className="px-4 py-3 whitespace-nowrap">Player Name</th>
+                  <th scope="col" className="px-4 py-3 whitespace-nowrap">Role</th>
+                  <th scope="col" className="px-4 py-3 whitespace-nowrap">Base Price</th>
+                  <th scope="col" className="px-4 py-3 whitespace-nowrap">Status</th>
+                  {isAdmin && <th scope="col" className="px-4 py-3 whitespace-nowrap">Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {players.map(player => (
                   <tr key={player.id} onClick={() => setSelectedPlayer(player)} className="bg-gray-800/80 border-b border-gray-700/50 hover:bg-gray-700/60 cursor-pointer">
-                    <th scope="row" className="px-6 py-4 font-medium text-white whitespace-nowrap flex items-center">
-                      <div className="h-8 w-8 rounded-full bg-gray-600 mr-3 overflow-hidden">
+                    <th scope="row" className="px-4 py-3 font-medium text-white whitespace-nowrap flex items-center">
+                      <div className="h-8 w-8 rounded-full bg-gray-600 mr-2 overflow-hidden">
                           {player.profile_photo_url ? <img src={player.profile_photo_url} className="h-full w-full object-cover" /> : null}
                       </div>
                       {player.name}
                     </th>
-                    <td className="px-6 py-4">{player.role}</td>
-                    <td className="px-6 py-4 font-mono text-green-400">₹{player.base_price.toLocaleString()}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 whitespace-nowrap">{player.role}</td>
+                    <td className="px-4 py-3 font-mono text-green-400 whitespace-nowrap">₹{player.base_price.toLocaleString()}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
                         player.status === 'available' ? 'bg-green-600/30 text-green-400' :
                         player.status === 'sold' ? 'bg-blue-600/30 text-blue-400' :
@@ -92,7 +92,7 @@ const Players: React.FC<PlayersProps> = ({ players, currentUser, onDataChange })
                       {!player.is_approved && <span className="ml-2 text-yellow-500 text-xs border border-yellow-500 px-1 rounded">PENDING</span>}
                     </td>
                     {isAdmin && (
-                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <button 
                           onClick={(e) => handleEditClick(player, e)}
                           className="font-medium text-blue-500 hover:text-blue-400 hover:underline"

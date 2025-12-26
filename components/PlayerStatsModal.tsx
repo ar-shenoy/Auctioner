@@ -18,8 +18,8 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-50 p-4" onClick={onClose}>
         <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-700 overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-purple-900 to-gray-900 p-6 flex justify-between items-start relative">
-                 <div className="flex items-center space-x-6">
+            <div className="bg-gradient-to-r from-purple-900 to-gray-900 p-4 sm:p-6 flex justify-between items-start relative">
+                 <div className="flex flex-col sm:flex-row items-center sm:space-x-6 space-y-4 sm:space-y-0 text-center sm:text-left w-full sm:w-auto">
                      <div className="h-24 w-24 rounded-full border-4 border-yellow-400 bg-gray-700 overflow-hidden shadow-lg flex-shrink-0">
                         {player.profile_photo_url ? (
                             <img src={player.profile_photo_url} className="w-full h-full object-cover" alt="" />
@@ -47,8 +47,8 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
                  </button>
             </div>
 
-            <div className="p-8 overflow-y-auto">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div className="p-4 sm:p-8 overflow-y-auto">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-4 sm:mb-8">
                      <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-700/50">
                          <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-3">Cricket Profile</h3>
                          <div className="space-y-1">
@@ -68,8 +68,8 @@ const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) 
 
                  <div>
                       <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-3">Career Statistics (Declared)</h3>
-                      <div className="grid grid-cols-3 gap-4">
-                          <div className="bg-gray-700/50 p-4 rounded-xl text-center border border-gray-700/50">
+                      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                          <div className="bg-gray-700/50 p-2 sm:p-4 rounded-xl text-center border border-gray-700/50">
                               <p className="text-3xl font-black text-white">{player.matches_played || 0}</p>
                               <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Matches</p>
                           </div>

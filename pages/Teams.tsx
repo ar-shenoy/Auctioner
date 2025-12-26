@@ -119,7 +119,7 @@ const Teams: React.FC<TeamsProps> = ({ teams, players, currentUser, onDataChange
         {selectedTeam && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedTeam(null)}>
                 <div className="bg-gray-900 w-full max-w-4xl max-h-[90vh] rounded-2xl border border-gray-700 shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-                    <div className="p-6 border-b border-gray-800 bg-gray-900 flex justify-between items-center">
+                    <div className="p-4 sm:p-6 border-b border-gray-800 bg-gray-900 flex justify-between items-center">
                         <div>
                             <h2 className="text-3xl font-bold text-white">{selectedTeam.name}</h2>
                             <p className="text-gray-400 text-sm mt-1">Full Squad & Analysis</p>
@@ -131,7 +131,7 @@ const Teams: React.FC<TeamsProps> = ({ teams, players, currentUser, onDataChange
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 bg-gray-900/50">
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-900/50">
                         {getTeamSquad(selectedTeam.id).length === 0 ? (
                             <div className="text-center py-20">
                                 <p className="text-gray-500 text-lg">No players purchased yet.</p>
@@ -160,7 +160,7 @@ const Teams: React.FC<TeamsProps> = ({ teams, players, currentUser, onDataChange
                         )}
                     </div>
 
-                    <div className="p-6 border-t border-gray-800 bg-gray-900">
+                    <div className="p-4 sm:p-6 border-t border-gray-800 bg-gray-900">
                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                              <div className="bg-gray-800 p-3 rounded-lg">
                                  <p className="text-xs text-gray-500 uppercase font-bold">Total Spent</p>

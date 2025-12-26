@@ -22,7 +22,7 @@ const UserManagement: React.FC = () => {
   }, []);
 
   return (
-    <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+    <div className="bg-gray-800 p-4 sm:p-6 rounded-xl border border-gray-700">
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-white">User Management</h2>
             <button
