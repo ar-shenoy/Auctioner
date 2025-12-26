@@ -14,6 +14,7 @@ from app.services.auction_service import (
     place_bid,
     end_auction,
     cancel_auction,
+    finalize_sold_player,
 )
 from app.dependencies.rbac import require_admin, require_team_manager, require_any_authenticated_user, get_current_user
 from app.core.rate_limit import bid_limiter, rate_limit_response
@@ -24,7 +25,9 @@ router = APIRouter(prefix="/auctions", tags=["auctions"])
 
 @router.post("", response_model=AuctionRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin)])
 async def create_auction_endpoint(payload: AuctionCreate, session: AsyncSession = Depends(get_session)):
-    auction = await create_auction(session, payload.name, payload.description, str(payload.current_player_id))
+    # Convert empty/none current_player_id if needed
+    player_id = str(payload.current_player_id) if payload.current_player_id else None
+    auction = await create_auction(session, payload.name, payload.description, player_id)
     return auction
 
 
@@ -56,6 +59,12 @@ async def place_bid_endpoint(
     # require_team_manager enforces role; service enforces ownership
     bid = await place_bid(session, id, str(payload.team_id), payload.amount, payload.min_increment, current_user)
     return bid
+
+
+@router.post("/{id}/sold", response_model=AuctionRead, dependencies=[Depends(require_admin)])
+async def mark_sold_endpoint(id: str, session: AsyncSession = Depends(get_session)):
+    auction = await finalize_sold_player(session, id)
+    return auction
 
 
 @router.post("/{id}/end", response_model=AuctionRead, dependencies=[Depends(require_admin)])
