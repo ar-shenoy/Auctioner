@@ -60,6 +60,77 @@ async def start_auction(session: AsyncSession, auction_id: str) -> Auction:
     return auction
 
 
+async def update_current_player(session: AsyncSession, auction_id: str, player_id: str) -> Auction:
+    async with session.begin():
+        stmt = select(Auction).where(Auction.id == auction_id).with_for_update()
+        res = await session.execute(stmt)
+        auction = res.scalars().first()
+        if not auction:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Auction not found")
+
+        # Verify player exists
+        stmt = select(Player).where(Player.id == player_id)
+        res = await session.execute(stmt)
+        player = res.scalars().first()
+        if not player:
+             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found")
+
+        auction.current_player_id = player_id
+        auction.current_bid = None
+        auction.current_bidder_id = None
+        session.add(auction)
+
+    await session.refresh(auction)
+
+    # Broadcast
+    payload = {
+        "type": "player_updated",
+        "auction_id": auction.id,
+        "current_player_id": player_id,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    await manager.broadcast_to_room(f"auction:{auction_id}", payload)
+    return auction
+
+
+async def mark_player_unsold(session: AsyncSession, auction_id: str) -> Auction:
+    async with session.begin():
+        stmt = select(Auction).where(Auction.id == auction_id).with_for_update()
+        res = await session.execute(stmt)
+        auction = res.scalars().first()
+        if not auction:
+             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Auction not found")
+
+        if not auction.current_player_id:
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No active player")
+
+        # Mark player Unsold
+        stmt = select(Player).where(Player.id == auction.current_player_id).with_for_update()
+        res = await session.execute(stmt)
+        player = res.scalars().first()
+
+        if player:
+            player.status = PlayerStatusEnum.UNSOLD.value
+            session.add(player)
+
+        auction.current_bid = None
+        auction.current_bidder_id = None
+        session.add(auction)
+
+    await session.refresh(auction)
+
+    # Broadcast
+    payload = {
+        "type": "player_unsold",
+        "auction_id": auction.id,
+        "player_id": auction.current_player_id,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    await manager.broadcast_to_room(f"auction:{auction_id}", payload)
+
+    return auction
+
+
 async def pause_auction(session: AsyncSession, auction_id: str) -> Auction:
     async with session.begin():
         stmt = select(Auction).where(Auction.id == auction_id).with_for_update()

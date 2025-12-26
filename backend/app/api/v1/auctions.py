@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db.session import get_session
-from app.schemas.auction import AuctionCreate, AuctionRead, BidCreate, BidRead
+from app.schemas.auction import AuctionCreate, AuctionRead, BidCreate, BidRead, AuctionPlayerUpdate
 from app.services.auction_service import (
     create_auction,
     start_auction,
@@ -15,6 +15,8 @@ from app.services.auction_service import (
     end_auction,
     cancel_auction,
     finalize_sold_player,
+    update_current_player,
+    mark_player_unsold,
 )
 from app.dependencies.rbac import require_admin, require_team_manager, require_any_authenticated_user, get_current_user
 from app.core.rate_limit import bid_limiter, rate_limit_response
@@ -64,6 +66,22 @@ async def place_bid_endpoint(
 @router.post("/{id}/sold", response_model=AuctionRead, dependencies=[Depends(require_admin)])
 async def mark_sold_endpoint(id: str, session: AsyncSession = Depends(get_session)):
     auction = await finalize_sold_player(session, id)
+    return auction
+
+
+@router.post("/{id}/unsold", response_model=AuctionRead, dependencies=[Depends(require_admin)])
+async def mark_unsold_endpoint(id: str, session: AsyncSession = Depends(get_session)):
+    auction = await mark_player_unsold(session, id)
+    return auction
+
+
+@router.put("/{id}/player", response_model=AuctionRead, dependencies=[Depends(require_admin)])
+async def update_player_endpoint(
+    id: str,
+    payload: AuctionPlayerUpdate,
+    session: AsyncSession = Depends(get_session)
+):
+    auction = await update_current_player(session, id, str(payload.player_id))
     return auction
 
 

@@ -104,7 +104,7 @@ const App: React.FC = () => {
       case Page.Players:
         return <Players players={players} setPlayers={setPlayers} currentUser={currentUser} onDataChange={fetchData} />;
       case Page.Teams:
-        return <Teams teams={teams} setTeams={setTeams} currentUser={currentUser} onDataChange={fetchData} />;
+        return <Teams teams={teams} players={players} setTeams={setTeams} currentUser={currentUser} onDataChange={fetchData} />;
       case Page.Auction:
         return <Auction allPlayers={players} teams={teams} setTeams={setTeams} currentUser={currentUser} onDataChange={fetchData} />;
       case Page.PlayerRegistration:

@@ -16,6 +16,10 @@ class AuctionCreate(BaseModel):
     current_player_id: UUID
 
 
+class AuctionPlayerUpdate(BaseModel):
+    player_id: UUID
+
+
 class AuctionRead(BaseModel):
     id: UUID
     name: str
