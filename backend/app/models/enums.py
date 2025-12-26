@@ -18,6 +18,20 @@ class PlayerRoleEnum(str, Enum):
     WICKET_KEEPER = "wicket_keeper"
 
 
+class BattingStyleEnum(str, Enum):
+    """Batting style."""
+    RIGHT_HAND = "right_hand"
+    LEFT_HAND = "left_hand"
+
+
+class BowlingStyleEnum(str, Enum):
+    """Bowling style."""
+    FAST = "fast"
+    MEDIUM = "medium"
+    SPIN = "spin"
+    NA = "na"
+
+
 class PlayerStatusEnum(str, Enum):
     """Player auction status."""
     AVAILABLE = "available"
@@ -80,3 +94,5 @@ class AuditActionEnum(str, Enum):
     PLAYER_SOLD = "player_sold"
     MATCH_STARTED = "match_started"
     MATCH_ENDED = "match_ended"
+    PLAYER_APPROVED = "player_approved"
+    PLAYER_REJECTED = "player_rejected"

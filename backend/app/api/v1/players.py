@@ -8,10 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
 from app.models import Player, Team
-from app.models.enums import PlayerStatusEnum, RoleEnum
+from app.models.enums import PlayerStatusEnum, RoleEnum, AuditActionEnum
 from app.schemas.player import PlayerCreate, PlayerRead, PlayerUpdate
 from app.services.player_service import create_player, list_players, get_player, update_player, delete_player
 from app.dependencies.rbac import require_admin, require_any_authenticated_user, get_current_user
+from app.core.audit import log_audit
 
 
 router = APIRouter(prefix="/players", tags=["players"])
@@ -37,15 +38,48 @@ async def create_player_endpoint(
     payload.status = PlayerStatusEnum.AVAILABLE.value
     # Ensure team_id is None for new registration (self-register)
     payload.team_id = None
+    # Explicitly set is_approved to False (handled in service or default in DB, but good to be explicit if we passed it)
+    # Schema doesn't have is_approved in Create, so it defaults to None -> DB default False.
 
     player = await create_player(session, payload)
+
+    await log_audit(session, current_user.id, AuditActionEnum.CREATE, "player", player.id, "Self-registration")
+
     return player
 
 
 @router.get("", response_model=List[PlayerRead], dependencies=[Depends(require_any_authenticated_user)])
-async def list_players_endpoint(session: AsyncSession = Depends(get_session)):
-    players = await list_players(session)
-    return players
+async def list_players_endpoint(
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    # Filter logic:
+    # Admin: All players
+    # Manager: All Approved players (AVAILABLE/SOLD/UNSOLD)
+    # Player: All Approved players? Or just themselves? Prompt: "Team Manager... Auction pool (read-only)"
+    # "Player... View own profile"
+
+    role = (current_user.role or "").lower()
+
+    if role == RoleEnum.ADMIN.value:
+         players = await list_players(session)
+         return players
+
+    if role == RoleEnum.TEAM_MANAGER.value:
+        # Managers see approved players in the pool
+        stmt = select(Player).where(Player.is_approved == True)
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    # Players logic: Currently standard is seeing all or restricted?
+    # Requirement: "Player can View own profile". Doesn't strictly forbid viewing others, but "Auction pool" is mentioned for Manager.
+    # Safe default: Players see all approved players (like public pool) or just themselves.
+    # Let's return all approved for now to support generic lists, or filter if needed.
+    # Actually, for "My Profile", they fetch /players/{id}.
+    # Let's return approved players for general list.
+    stmt = select(Player).where(Player.is_approved == True)
+    result = await session.execute(stmt)
+    return result.scalars().all()
 
 
 @router.get("/{id}", response_model=PlayerRead, dependencies=[Depends(require_any_authenticated_user)])
@@ -67,25 +101,26 @@ async def update_player_endpoint(
     Update player.
     - Admin: Can update all fields.
     - Team Manager: Can only update metadata (name, role) of players in their team.
-      Cannot change status or transfer team.
-    - Player: Cannot update (read-only self profile usually).
+    - Player: Can update their OWN profile ONLY if Status is AVAILABLE.
     """
     role = (current_user.role or "").lower()
 
+    # Fetch player first
+    stmt = select(Player).where(Player.id == id)
+    result = await session.execute(stmt)
+    player = result.scalars().first()
+    if not player:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found")
+
     # 1. Admin Logic
     if role == RoleEnum.ADMIN.value:
-        player = await update_player(session, id, payload)
-        return player
+        # Admin can update anything.
+        updated_player = await update_player(session, id, payload)
+        await log_audit(session, current_user.id, AuditActionEnum.UPDATE, "player", id, "Admin update")
+        return updated_player
 
     # 2. Team Manager Logic
     if role == RoleEnum.TEAM_MANAGER.value:
-        # Check ownership of the player's team
-        stmt = select(Player).where(Player.id == id)
-        result = await session.execute(stmt)
-        player = result.scalars().first()
-        if not player:
-             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found")
-
         if not player.team_id:
              raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot edit unassigned players")
 
@@ -96,24 +131,80 @@ async def update_player_endpoint(
         if not team or team.manager_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not manage this player's team")
 
-        # Enforce restrictions
-        # Cannot change team_id
+        # Restrictions
         if payload.team_id is not None and str(payload.team_id) != str(player.team_id):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot transfer players")
-
-        # Cannot change status
         if payload.status is not None and payload.status != player.status:
              raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot change player status")
-
-        # Cannot change base_price (auction related)
         if payload.base_price is not None and payload.base_price != player.base_price:
              raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot change base price")
+        if payload.is_approved is not None:
+             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot approve players")
 
-        player = await update_player(session, id, payload)
-        return player
+        updated_player = await update_player(session, id, payload)
+        await log_audit(session, current_user.id, AuditActionEnum.UPDATE, "player", id, "Manager update")
+        return updated_player
 
-    # 3. Player Logic (or others)
+    # 3. Player Logic (Self-Edit)
+    if role == RoleEnum.PLAYER.value:
+        if player.user_id != current_user.id:
+             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot edit other players")
+
+        # Check Status
+        if player.status != PlayerStatusEnum.AVAILABLE.value:
+             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot edit profile after being sold/unsold")
+
+        # Prevent critical field edits
+        if payload.status is not None or payload.team_id is not None or payload.is_approved is not None:
+             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot change critical fields")
+
+        updated_player = await update_player(session, id, payload)
+        await log_audit(session, current_user.id, AuditActionEnum.UPDATE, "player", id, "Self update")
+        return updated_player
+
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+
+
+@router.patch("/{id}/approve", response_model=PlayerRead, dependencies=[Depends(require_admin)])
+async def approve_player_endpoint(
+    id: str,
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    stmt = select(Player).where(Player.id == id)
+    result = await session.execute(stmt)
+    player = result.scalars().first()
+    if not player:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found")
+
+    player.is_approved = True
+    session.add(player)
+    await session.commit()
+    await session.refresh(player)
+
+    await log_audit(session, current_user.id, AuditActionEnum.PLAYER_APPROVED, "player", id, "Approved")
+    return player
+
+
+@router.patch("/{id}/reject", response_model=PlayerRead, dependencies=[Depends(require_admin)])
+async def reject_player_endpoint(
+    id: str,
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    stmt = select(Player).where(Player.id == id)
+    result = await session.execute(stmt)
+    player = result.scalars().first()
+    if not player:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found")
+
+    player.is_approved = False
+    session.add(player)
+    await session.commit()
+    await session.refresh(player)
+
+    await log_audit(session, current_user.id, AuditActionEnum.PLAYER_REJECTED, "player", id, "Rejected")
+    return player
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
