@@ -11,55 +11,59 @@ from app.models import Player, Team
 from app.models.enums import PlayerStatusEnum, RoleEnum, AuditActionEnum
 from app.schemas.player import PlayerCreate, PlayerRead, PlayerUpdate
 from app.services.player_service import create_player, list_players, get_player, update_player, delete_player
-from app.dependencies.rbac import require_admin, require_any_authenticated_user, get_current_user
+from app.dependencies.rbac import require_admin, require_any_authenticated_user, get_current_user, get_current_user_optional
 from app.core.audit import log_audit
 
 
 router = APIRouter(prefix="/players", tags=["players"])
 
 
-@router.post("", response_model=PlayerRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_any_authenticated_user)])
+@router.post("", response_model=PlayerRead, status_code=status.HTTP_201_CREATED)
 async def create_player_endpoint(
     payload: PlayerCreate,
     session: AsyncSession = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user_optional)
 ):
-    # Check if user already has a player profile
-    stmt = select(Player).where(Player.user_id == current_user.id)
-    result = await session.execute(stmt)
-    if result.scalars().first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already has a player profile"
-        )
-
-    # Force user_id and status
-    payload.user_id = current_user.id
+    # Force status to AVAILABLE for new registrations
     payload.status = PlayerStatusEnum.AVAILABLE.value
-    # Ensure team_id is None for new registration (self-register)
     payload.team_id = None
-    # Explicitly set is_approved to False (handled in service or default in DB, but good to be explicit if we passed it)
-    # Schema doesn't have is_approved in Create, so it defaults to None -> DB default False.
+
+    user_id_for_audit = "public"
+
+    if current_user:
+        # If authenticated, link to user and check duplicates
+        stmt = select(Player).where(Player.user_id == current_user.id)
+        result = await session.execute(stmt)
+        if result.scalars().first():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User already has a player profile"
+            )
+        payload.user_id = current_user.id
+        user_id_for_audit = current_user.id
+    else:
+        # Public registration - user_id is None
+        payload.user_id = None
 
     player = await create_player(session, payload)
 
-    await log_audit(session, current_user.id, AuditActionEnum.CREATE, "player", player.id, "Self-registration")
+    # Audit log (if user is authenticated, else log as 'public')
+    if user_id_for_audit != "public":
+        await log_audit(session, user_id_for_audit, AuditActionEnum.CREATE, "player", player.id, "Self-registration")
 
     return player
 
 
-@router.get("", response_model=List[PlayerRead], dependencies=[Depends(require_any_authenticated_user)])
+@router.get("", response_model=List[PlayerRead])
 async def list_players_endpoint(
     session: AsyncSession = Depends(get_session),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user_optional)
 ):
     # Filter logic:
     # Admin: All players
-    # Manager: All Approved players (AVAILABLE/SOLD/UNSOLD)
-    # Player: All Approved players? Or just themselves? Prompt: "Team Manager... Auction pool (read-only)"
-    # "Player... View own profile"
+    # Public/Manager/Player: All Approved players (AVAILABLE/SOLD/UNSOLD)
 
-    role = (current_user.role or "").lower()
+    role = (current_user.role or "").lower() if current_user else "public"
 
     if role == RoleEnum.ADMIN.value:
          players = await list_players(session)

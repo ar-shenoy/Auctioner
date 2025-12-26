@@ -20,7 +20,7 @@ async def create_team_endpoint(payload: TeamCreate, session: AsyncSession = Depe
     return team
 
 
-@router.get("", response_model=List[TeamRead], dependencies=[Depends(require_any_authenticated_user)])
+@router.get("", response_model=List[TeamRead])
 async def list_teams_endpoint(session: AsyncSession = Depends(get_session)):
     teams = await list_teams(session)
     return teams

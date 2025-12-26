@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import ErrorBoundary from './components/ErrorBoundary';
-import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import PublicPlayerList from './pages/PublicPlayerList';
+import PublicHeader from './components/PublicHeader';
 import Players from './pages/Players';
 import Teams from './pages/Teams';
 import Auction from './pages/Auction';
@@ -23,7 +24,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(getCurrentUser());
   const [currentPage, setCurrentPage] = useState<Page>(Page.Dashboard);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isLoadingUser, setIsLoadingUser] = useState(!currentUser);
+  const [isLoadingUser, setIsLoadingUser] = useState(!currentUser); // If no user initially, we might be loading or just public.
   
   const [players, setPlayers] = useState<Player[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -31,22 +32,28 @@ const App: React.FC = () => {
 
   // Restore session from backend on app load
   useEffect(() => {
-    if (!currentUser && isLoadingUser) {
-      getMe().then((user) => {
-        if (user) setCurrentUser(user);
-        setIsLoadingUser(false);
-      });
+    // Only try to fetch user if we think we might have one (e.g. token exists)
+    // Actually, getMe() checks token validity.
+    // If no token in localstorage, getCurrentUser() returns null.
+
+    if (localStorage.getItem('access_token')) {
+         getMe().then((user) => {
+            if (user) setCurrentUser(user);
+            setIsLoadingUser(false);
+          }).catch(() => {
+            // Token invalid
+            setCurrentUser(null);
+            setIsLoadingUser(false);
+          });
     } else {
-      setIsLoadingUser(false);
+        setIsLoadingUser(false);
     }
   }, []);
 
-  // Fetch data from backend when user is authenticated
+  // Fetch data always (public or private)
   useEffect(() => {
-    if (currentUser) {
-      fetchData();
-    }
-  }, [currentUser]);
+     fetchData();
+  }, [currentUser]); // Re-fetch if user changes (permissions might change)
 
   const fetchData = async () => {
     setIsLoadingData(true);
@@ -59,12 +66,12 @@ const App: React.FC = () => {
       setTeams(teamsRes.data);
     } catch (error: any) {
       console.error('Failed to fetch data:', error);
-      // HARDENING: If auth fails, force logout to break 403 loop
+      // If 403/401, maybe we are trying to access admin routes?
+      // But /players and /teams should be public now (teams might need update).
+      // If /teams is still protected, this might fail.
       if (error.response?.status === 401 || error.response?.status === 403) {
-        handleLogout();
-      } else {
-        setPlayers([]);
-        setTeams([]);
+          // If we were logged in, logout.
+          if (currentUser) handleLogout();
       }
     } finally {
       setIsLoadingData(false);
@@ -73,34 +80,48 @@ const App: React.FC = () => {
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
+    // After login, default to Admin Dashboard if admin
+    setCurrentPage(Page.Dashboard);
   };
 
   const handleLogout = () => {
     apiLogout();
     setCurrentUser(null);
     setCurrentPage(Page.Dashboard);
-    setPlayers([]);
-    setTeams([]);
   };
   
   const handlePlayerStatsUpdate = (playerId: string, performance: { runs?: number, wickets?: number }) => {
-    // Stats updates now happen via backend API calls in LiveMatch
-    // Refresh data after update
     fetchData();
   };
 
   const renderPage = () => {
-    if (isLoadingData) {
-      return (
-        <div className="flex items-center justify-center h-full">
+    if (isLoadingData && players.length === 0) {
+       // Only show loading if we have NO data.
+       // Otherwise show stale data while refreshing?
+       // For now simple loading.
+       return (
+        <div className="flex items-center justify-center h-full min-h-[50vh]">
           <div className="text-gray-400">Loading...</div>
         </div>
       );
     }
 
+    // Public Pages
+    if (!currentUser) {
+        if (currentPage === Page.PlayerRegistration) {
+            return <PlayerRegistration />;
+        }
+        if (currentPage === Page.Login) {
+            return <Login onLogin={handleLogin} />;
+        }
+        // Default to Public Player List for Dashboard or any other protected page
+        return <PublicPlayerList players={players} teams={teams} />;
+    }
+
+    // Authenticated Pages
     switch (currentPage) {
       case Page.Dashboard:
-        return <Dashboard players={players} teams={teams} />;
+        return <AdminDashboard players={players} teams={teams} />;
       case Page.Players:
         return <Players players={players} setPlayers={setPlayers} currentUser={currentUser} onDataChange={fetchData} />;
       case Page.Teams:
@@ -111,8 +132,10 @@ const App: React.FC = () => {
         return <Simulation teams={teams} />;
       case Page.LiveMatch:
         return <LiveMatch teams={teams} onStatUpdate={handlePlayerStatsUpdate} currentUser={currentUser} />;
+      case Page.PlayerRegistration:
+        return <PlayerRegistration />; // Admin/Manager can also see this?
       default:
-        return <Dashboard players={players} teams={teams} />;
+        return <AdminDashboard players={players} teams={teams} />;
     }
   };
 
@@ -122,8 +145,10 @@ const App: React.FC = () => {
     return <Register token={urlParams.get('token')!} />;
   }
 
+  // Legacy query param support or direct link support
   if (urlParams.get('page') === 'player-register') {
-    return <PlayerRegistration />;
+      // We can just render the component directly
+      return <PlayerRegistration />;
   }
 
   if (isLoadingUser) {
@@ -134,8 +159,23 @@ const App: React.FC = () => {
     );
   }
 
+  // Layout Decision
   if (!currentUser) {
-    return <Login onLogin={handleLogin} />;
+      return (
+        <div className="min-h-screen bg-[#1a1a1a] font-sans">
+             <PublicHeader
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                onRegisterClick={() => setCurrentPage(Page.PlayerRegistration)}
+                onViewPlayersClick={() => setCurrentPage(Page.Dashboard)}
+                onLoginClick={() => setCurrentPage(Page.Login)}
+             />
+             <Toaster position="top-right" />
+             <main>
+                {renderPage()}
+             </main>
+        </div>
+      );
   }
 
   return (
