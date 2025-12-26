@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Player, Team } from '../types';
 import StatCard from '../components/StatCard';
 import PlayerIcon from '../components/icons/PlayerIcon';
@@ -15,6 +15,7 @@ interface DashboardProps {
 }
 
 const AdminDashboard: React.FC<DashboardProps> = ({ players, teams, onDataChange }) => {
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const totalBudgetSpent = teams.reduce((acc, team) => acc + team.budget_spent, 0);
     const totalPlayers = players.length;
     const playersPerTeam = teams.length > 0 ? (totalPlayers / teams.length) : 0;
@@ -44,6 +45,18 @@ const AdminDashboard: React.FC<DashboardProps> = ({ players, teams, onDataChange
 
     return (
         <div className="space-y-8">
+            <div className="flex justify-end">
+                <button
+                    onClick={() => setIsUserModalOpen(true)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                    </svg>
+                    Manage Users
+                </button>
+            </div>
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="Total Players" value={totalPlayers} icon={<PlayerIcon className="h-8 w-8" />} />
@@ -157,7 +170,14 @@ const AdminDashboard: React.FC<DashboardProps> = ({ players, teams, onDataChange
                 </div>
             </div>
 
-            <UserManagement />
+            {isUserModalOpen && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-50 p-4" onClick={() => setIsUserModalOpen(false)}>
+                    <div className="w-full max-w-4xl relative" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setIsUserModalOpen(false)} className="absolute -top-10 right-0 text-gray-400 hover:text-white text-xl">✕ Close</button>
+                        <UserManagement />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

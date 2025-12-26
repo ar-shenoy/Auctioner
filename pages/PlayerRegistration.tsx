@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../core/api';
@@ -9,7 +8,6 @@ const PlayerRegistration: React.FC = () => {
     name: '',
     date_of_birth: '',
     nationality: 'India',
-    state: '',
     city: '',
 
     // Cricket Profile
@@ -26,7 +24,7 @@ const PlayerRegistration: React.FC = () => {
     economy_rate: 0,
 
     // Auction Metadata
-    base_price: 2000000, // 20 Lakhs min? Or just 0
+    base_price: 0,
     expected_price: 0,
     availability_seasons: '2025',
 
@@ -37,7 +35,6 @@ const PlayerRegistration: React.FC = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -62,6 +59,8 @@ const PlayerRegistration: React.FC = () => {
       // Clean payload
       const payload = {
         ...formData,
+        batting_style: formData.batting_style || null,
+        bowling_style: formData.bowling_style || null,
         expected_price: formData.expected_price || null,
         profile_photo_url: formData.profile_photo_url || null,
         special_skills: formData.special_skills || null,
@@ -70,14 +69,13 @@ const PlayerRegistration: React.FC = () => {
 
       await api.post('/players', payload);
 
-      setRegistrationSuccess(true);
-      toast.success('Registration submitted successfully!');
+      toast.success('Registration submitted successfully! Redirecting...');
 
       // Redirect or clear
       setTimeout(() => {
           // Navigate to dashboard by clearing query params (App.tsx default)
           window.location.href = '/';
-      }, 3000);
+      }, 2000);
 
     } catch (error: any) {
       const errorMessage =
@@ -86,23 +84,9 @@ const PlayerRegistration: React.FC = () => {
         'Failed to register player';
       toast.error(errorMessage);
       console.error('Registration error:', error);
-    } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (registrationSuccess) {
-      return (
-          <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-              <div className="max-w-md w-full bg-gray-800 p-8 rounded-xl border border-green-500/50 text-center">
-                  <div className="text-6xl mb-4">🏏</div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Submission Received!</h2>
-                  <p className="text-gray-400 mb-6">Your profile is now under review by the administrators.</p>
-                  <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
-              </div>
-          </div>
-      )
-  }
 
   return (
     <div className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -129,10 +113,6 @@ const PlayerRegistration: React.FC = () => {
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Nationality *</label>
                         <input name="nationality" type="text" value={formData.nationality} onChange={handleChange} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white" required />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">State *</label>
-                        <input name="state" type="text" value={formData.state} onChange={handleChange} className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white" required />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">City *</label>

@@ -14,13 +14,13 @@ class PlayerCreate(BaseModel):
     name: constr(min_length=1, max_length=255)
     date_of_birth: date
     nationality: constr(min_length=1, max_length=100)
-    state: constr(min_length=1, max_length=100)
-    city: constr(min_length=1, max_length=100)
+    state: Optional[constr(min_length=1, max_length=100)] = None
+    city: Optional[constr(min_length=1, max_length=100)] = None
 
     # Cricket Profile
     role: PlayerRoleEnum
-    batting_style: BattingStyleEnum
-    bowling_style: BowlingStyleEnum
+    batting_style: Optional[BattingStyleEnum] = None
+    bowling_style: Optional[BowlingStyleEnum] = None
     special_skills: Optional[str] = None
 
     # Performance Metrics
@@ -45,6 +45,12 @@ class PlayerCreate(BaseModel):
     team_id: Optional[UUID] = None
     status: Optional[str] = None
     is_approved: Optional[bool] = None
+
+    @validator('batting_style', 'bowling_style', 'state', 'city', 'special_skills', 'bio', 'team_id', 'availability_seasons', pre=True, check_fields=False)
+    def empty_str_to_none(cls, v):
+        if v == "":
+            return None
+        return v
 
 
 class PlayerUpdate(BaseModel):
@@ -78,6 +84,12 @@ class PlayerUpdate(BaseModel):
     team_id: Optional[UUID] = None
     status: Optional[str] = None
     is_approved: Optional[bool] = None
+
+    @validator('batting_style', 'bowling_style', 'state', 'city', 'special_skills', 'bio', 'team_id', 'availability_seasons', pre=True, check_fields=False)
+    def empty_str_to_none(cls, v):
+        if v == "":
+            return None
+        return v
 
 
 class PlayerRead(BaseModel):
