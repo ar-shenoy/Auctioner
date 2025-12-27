@@ -1,19 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import ErrorBoundary from './components/ErrorBoundary';
-import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import PublicPlayerList from './pages/PublicPlayerList';
+import PublicHeader from './components/PublicHeader';
 import Players from './pages/Players';
 import Teams from './pages/Teams';
 import Auction from './pages/Auction';
-import Simulation from './pages/Simulation';
-import LiveMatch from './pages/LiveMatch';
 import PlayerRegistration from './pages/PlayerRegistration';
 import { Page, Player, Team, User, Role } from './types';
 import { Toaster } from 'react-hot-toast';
 import AdminPanel from './components/AdminPanel';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import { getCurrentUser, getMe, logout as apiLogout } from './core/auth';
 import HamburgerIcon from './components/icons/HamburgerIcon';
 import api from './core/api';
@@ -29,23 +27,24 @@ const App: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // Restore session from backend on app load
+  // Restore session
   useEffect(() => {
-    if (!currentUser && isLoadingUser) {
-      getMe().then((user) => {
-        if (user) setCurrentUser(user);
-        setIsLoadingUser(false);
-      });
+    if (localStorage.getItem('access_token')) {
+         getMe().then((user) => {
+            if (user) setCurrentUser(user);
+            setIsLoadingUser(false);
+          }).catch(() => {
+            setCurrentUser(null);
+            setIsLoadingUser(false);
+          });
     } else {
-      setIsLoadingUser(false);
+        setIsLoadingUser(false);
     }
   }, []);
 
-  // Fetch data from backend when user is authenticated
+  // Fetch data
   useEffect(() => {
-    if (currentUser) {
-      fetchData();
-    }
+     fetchData();
   }, [currentUser]);
 
   const fetchData = async () => {
@@ -59,12 +58,8 @@ const App: React.FC = () => {
       setTeams(teamsRes.data);
     } catch (error: any) {
       console.error('Failed to fetch data:', error);
-      // HARDENING: If auth fails, force logout to break 403 loop
       if (error.response?.status === 401 || error.response?.status === 403) {
-        handleLogout();
-      } else {
-        setPlayers([]);
-        setTeams([]);
+          if (currentUser) handleLogout();
       }
     } finally {
       setIsLoadingData(false);
@@ -73,57 +68,57 @@ const App: React.FC = () => {
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
+    setCurrentPage(Page.Dashboard);
   };
 
   const handleLogout = () => {
     apiLogout();
     setCurrentUser(null);
     setCurrentPage(Page.Dashboard);
-    setPlayers([]);
-    setTeams([]);
   };
   
-  const handlePlayerStatsUpdate = (playerId: string, performance: { runs?: number, wickets?: number }) => {
-    // Stats updates now happen via backend API calls in LiveMatch
-    // Refresh data after update
-    fetchData();
-  };
-
   const renderPage = () => {
-    if (isLoadingData) {
-      return (
-        <div className="flex items-center justify-center h-full">
+    if (isLoadingData && players.length === 0) {
+       return (
+        <div className="flex items-center justify-center h-full min-h-[50vh]">
           <div className="text-gray-400">Loading...</div>
         </div>
       );
     }
 
+    // Public Pages
+    if (!currentUser) {
+        if (currentPage === Page.PlayerRegistration) {
+            return <PlayerRegistration />;
+        }
+        if (currentPage === Page.Login) {
+            return <Login onLogin={handleLogin} />;
+        }
+        return <PublicPlayerList players={players} teams={teams} />;
+    }
+
+    // Authenticated Pages
     switch (currentPage) {
       case Page.Dashboard:
-        return <Dashboard players={players} teams={teams} />;
+        return <AdminDashboard players={players} teams={teams} onDataChange={fetchData} />;
       case Page.Players:
         return <Players players={players} setPlayers={setPlayers} currentUser={currentUser} onDataChange={fetchData} />;
       case Page.Teams:
-        return <Teams teams={teams} setTeams={setTeams} currentUser={currentUser} onDataChange={fetchData} />;
+        return <Teams teams={teams} players={players} setTeams={setTeams} currentUser={currentUser} onDataChange={fetchData} />;
       case Page.Auction:
         return <Auction allPlayers={players} teams={teams} setTeams={setTeams} currentUser={currentUser} onDataChange={fetchData} />;
-      case Page.Simulation:
-        return <Simulation teams={teams} />;
-      case Page.LiveMatch:
-        return <LiveMatch teams={teams} onStatUpdate={handlePlayerStatsUpdate} currentUser={currentUser} />;
+      case Page.PlayerRegistration:
+        return <PlayerRegistration />;
       default:
-        return <Dashboard players={players} teams={teams} />;
+        return <AdminDashboard players={players} teams={teams} onDataChange={fetchData} />;
     }
   };
 
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
-  if (urlParams.get('page') === 'register' && urlParams.get('token')) {
-    return <Register token={urlParams.get('token')!} />;
-  }
 
   if (urlParams.get('page') === 'player-register') {
-    return <PlayerRegistration />;
+      return <PlayerRegistration />;
   }
 
   if (isLoadingUser) {
@@ -134,10 +129,26 @@ const App: React.FC = () => {
     );
   }
 
+  // Public Layout
   if (!currentUser) {
-    return <Login onLogin={handleLogin} />;
+      return (
+        <div className="min-h-screen bg-[#1a1a1a] font-sans">
+             <PublicHeader
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                onRegisterClick={() => setCurrentPage(Page.PlayerRegistration)}
+                onViewPlayersClick={() => setCurrentPage(Page.Dashboard)}
+                onLoginClick={() => setCurrentPage(Page.Login)}
+             />
+             <Toaster position="top-right" />
+             <main>
+                {renderPage()}
+             </main>
+        </div>
+      );
   }
 
+  // Admin Layout
   return (
     <div className="relative min-h-screen md:flex bg-gray-900 text-gray-200 font-sans">
       <Toaster position="top-right" />

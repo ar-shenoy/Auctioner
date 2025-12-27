@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db.session import get_session
-from app.schemas.auction import AuctionCreate, AuctionRead, BidCreate, BidRead
+from app.schemas.auction import AuctionCreate, AuctionRead, BidCreate, BidRead, AuctionPlayerUpdate
 from app.services.auction_service import (
     create_auction,
     start_auction,
@@ -14,6 +14,9 @@ from app.services.auction_service import (
     place_bid,
     end_auction,
     cancel_auction,
+    finalize_sold_player,
+    update_current_player,
+    mark_player_unsold,
 )
 from app.dependencies.rbac import require_admin, require_team_manager, require_any_authenticated_user, get_current_user
 from app.core.rate_limit import bid_limiter, rate_limit_response
@@ -24,7 +27,9 @@ router = APIRouter(prefix="/auctions", tags=["auctions"])
 
 @router.post("", response_model=AuctionRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin)])
 async def create_auction_endpoint(payload: AuctionCreate, session: AsyncSession = Depends(get_session)):
-    auction = await create_auction(session, payload.name, payload.description, str(payload.current_player_id))
+    # Convert empty/none current_player_id if needed
+    player_id = str(payload.current_player_id) if payload.current_player_id else None
+    auction = await create_auction(session, payload.name, payload.description, player_id)
     return auction
 
 
@@ -56,6 +61,28 @@ async def place_bid_endpoint(
     # require_team_manager enforces role; service enforces ownership
     bid = await place_bid(session, id, str(payload.team_id), payload.amount, payload.min_increment, current_user)
     return bid
+
+
+@router.post("/{id}/sold", response_model=AuctionRead, dependencies=[Depends(require_admin)])
+async def mark_sold_endpoint(id: str, session: AsyncSession = Depends(get_session)):
+    auction = await finalize_sold_player(session, id)
+    return auction
+
+
+@router.post("/{id}/unsold", response_model=AuctionRead, dependencies=[Depends(require_admin)])
+async def mark_unsold_endpoint(id: str, session: AsyncSession = Depends(get_session)):
+    auction = await mark_player_unsold(session, id)
+    return auction
+
+
+@router.put("/{id}/player", response_model=AuctionRead, dependencies=[Depends(require_admin)])
+async def update_player_endpoint(
+    id: str,
+    payload: AuctionPlayerUpdate,
+    session: AsyncSession = Depends(get_session)
+):
+    auction = await update_current_player(session, id, str(payload.player_id))
+    return auction
 
 
 @router.post("/{id}/end", response_model=AuctionRead, dependencies=[Depends(require_admin)])

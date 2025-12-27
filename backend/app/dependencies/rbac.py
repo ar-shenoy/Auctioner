@@ -27,6 +27,7 @@ from app.db.session import get_session
 from app.models import User, Team
 
 _bearer = HTTPBearer()
+_bearer_optional = HTTPBearer(auto_error=False)
 
 
 def _is_admin(user: User) -> bool:
@@ -59,6 +60,32 @@ async def get_current_user(
     user = await _get_user_by_id(session, user_id)
     if not user or not getattr(user, "is_active", True):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    return user
+
+
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_optional),
+    session: AsyncSession = Depends(get_session),
+) -> Optional[User]:
+    """Return User if token is valid, else None. Raises 401 only if token is invalid."""
+    if not credentials:
+        return None
+
+    token = credentials.credentials
+    try:
+        payload = decode_token(token, expected_type="access")
+    except JWTError:
+        # If a token is sent but invalid, we return 401 to avoid confusion
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+
+    user = await _get_user_by_id(session, user_id)
+    if not user or not getattr(user, "is_active", True):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+
     return user
 
 

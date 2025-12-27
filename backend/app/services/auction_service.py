@@ -10,11 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
 from app.models import Auction, Bid, Team, Player
-from app.models.enums import AuctionStatusEnum
+from app.models.enums import AuctionStatusEnum, PlayerStatusEnum
 from app.websocket.manager import manager
 
+# IPL Style Budget Limit: 100 Crores
+BUDGET_LIMIT = 1000000000  # 100,00,00,000
 
-async def create_auction(session: AsyncSession, name: str, description: Optional[str], player_id: str) -> Auction:
+
+async def create_auction(session: AsyncSession, name: str, description: Optional[str], player_id: str | None) -> Auction:
     auction = Auction(
         id=str(uuid4()),
         name=name,
@@ -50,6 +53,77 @@ async def start_auction(session: AsyncSession, auction_id: str) -> Auction:
         "type": "auction_started",
         "auction_id": auction.id,
         "status": auction.status,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    await manager.broadcast_to_room(f"auction:{auction_id}", payload)
+
+    return auction
+
+
+async def update_current_player(session: AsyncSession, auction_id: str, player_id: str) -> Auction:
+    async with session.begin():
+        stmt = select(Auction).where(Auction.id == auction_id).with_for_update()
+        res = await session.execute(stmt)
+        auction = res.scalars().first()
+        if not auction:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Auction not found")
+
+        # Verify player exists
+        stmt = select(Player).where(Player.id == player_id)
+        res = await session.execute(stmt)
+        player = res.scalars().first()
+        if not player:
+             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found")
+
+        auction.current_player_id = player_id
+        auction.current_bid = None
+        auction.current_bidder_id = None
+        session.add(auction)
+
+    await session.refresh(auction)
+
+    # Broadcast
+    payload = {
+        "type": "player_updated",
+        "auction_id": auction.id,
+        "current_player_id": player_id,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    await manager.broadcast_to_room(f"auction:{auction_id}", payload)
+    return auction
+
+
+async def mark_player_unsold(session: AsyncSession, auction_id: str) -> Auction:
+    async with session.begin():
+        stmt = select(Auction).where(Auction.id == auction_id).with_for_update()
+        res = await session.execute(stmt)
+        auction = res.scalars().first()
+        if not auction:
+             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Auction not found")
+
+        if not auction.current_player_id:
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No active player")
+
+        # Mark player Unsold
+        stmt = select(Player).where(Player.id == auction.current_player_id).with_for_update()
+        res = await session.execute(stmt)
+        player = res.scalars().first()
+
+        if player:
+            player.status = PlayerStatusEnum.UNSOLD.value
+            session.add(player)
+
+        auction.current_bid = None
+        auction.current_bidder_id = None
+        session.add(auction)
+
+    await session.refresh(auction)
+
+    # Broadcast
+    payload = {
+        "type": "player_unsold",
+        "auction_id": auction.id,
+        "player_id": auction.current_player_id,
         "timestamp": datetime.utcnow().isoformat(),
     }
     await manager.broadcast_to_room(f"auction:{auction_id}", payload)
@@ -129,7 +203,16 @@ async def place_bid(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Auction is not active")
 
         current_high = auction.current_bid or 0
-        if amount < current_high + min_increment:
+
+        # Check if first bid
+        if auction.current_bid is None:
+             if auction.current_player_id:
+                stmt = select(Player).where(Player.id == auction.current_player_id)
+                p_res = await session.execute(stmt)
+                player = p_res.scalars().first()
+                if player and amount < player.base_price:
+                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Bid must be at least base price {player.base_price}")
+        elif amount < current_high + min_increment:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bid increment too small")
 
         # Lock team
@@ -144,26 +227,13 @@ async def place_bid(
             if team.manager_id != getattr(current_user, "id", None):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not manager of the team")
 
-        # Budget enforcement: team.budget_spent is the TOTAL budget cap (explicit, no defaults)
-        budget_cap = team.budget_spent
-        if budget_cap is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Team budget not configured")
-
-        # Calculate pending commitments in other ongoing/paused auctions
+        # Budget enforcement
+        budget_spent = team.budget_spent or 0
         pending_other = await _sum_pending_bids_other_auctions(session, team_id, auction_id)
 
-        # If team currently winning this auction, their previous bid will be released
-        previous_bid_amount = 0
-        if auction.current_bidder_id == team_id and auction.current_bid:
-            previous_bid_amount = auction.current_bid
-
-        # Required extra commitment = new_amount - old_amount_on_this_auction
-        required_delta = amount - previous_bid_amount
-
-        # Available budget after pending commitments in other auctions
-        available = budget_cap - pending_other
-        if required_delta > available:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient budget")
+        total_committed = budget_spent + pending_other + amount
+        if total_committed > BUDGET_LIMIT:
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Insufficient budget. Limit: {BUDGET_LIMIT}, Required: {total_committed}")
 
         # Unset previous winning bid for this auction
         stmt = select(Bid).where(Bid.auction_id == auction_id, Bid.is_winning == True).with_for_update()
@@ -205,6 +275,80 @@ async def place_bid(
     return bid
 
 
+async def finalize_sold_player(session: AsyncSession, auction_id: str) -> Auction:
+    """Marks the current player in the auction as SOLD to the highest bidder."""
+    async with session.begin():
+        stmt = select(Auction).where(Auction.id == auction_id).with_for_update()
+        res = await session.execute(stmt)
+        auction = res.scalars().first()
+        if not auction:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Auction not found")
+
+        if not auction.current_player_id:
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No active player in auction")
+
+        # Determine winning bid
+        stmt = select(Bid).where(Bid.auction_id == auction_id, Bid.is_winning == True).with_for_update()
+        res = await session.execute(stmt)
+        winning = res.scalars().first()
+
+        if not winning:
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No winning bid to sell")
+
+        # Verify bid matches auction state
+        if winning.team_id != auction.current_bidder_id or winning.amount != auction.current_bid:
+             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Auction state mismatch")
+
+        # Update Player
+        stmt = select(Player).where(Player.id == auction.current_player_id).with_for_update()
+        res = await session.execute(stmt)
+        player = res.scalars().first()
+
+        if player:
+            if player.status == PlayerStatusEnum.SOLD.value:
+                # Already sold. Check consistency.
+                if player.team_id == winning.team_id and player.sold_price == winning.amount:
+                    # Idempotent success
+                    pass
+                else:
+                    # Sold to someone else?
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Player already sold to another team")
+            else:
+                player.team_id = winning.team_id
+                player.sold_price = winning.amount
+                player.status = PlayerStatusEnum.SOLD.value
+                session.add(player)
+
+                # Update Team Budget
+                stmt = select(Team).where(Team.id == winning.team_id).with_for_update()
+                res = await session.execute(stmt)
+                team = res.scalars().first()
+                if team:
+                    team.budget_spent = (team.budget_spent or 0) + winning.amount
+                    session.add(team)
+
+                # Update Auction stats
+                auction.total_revenue = (auction.total_revenue or 0) + (winning.amount or 0)
+
+        session.add(auction)
+        winning_team_id = winning.team_id
+
+    await session.refresh(auction)
+
+    # Broadcast
+    payload = {
+        "type": "player_sold",
+        "auction_id": auction.id,
+        "player_id": auction.current_player_id,
+        "team_id": winning_team_id,
+        "amount": auction.current_bid,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    await manager.broadcast_to_room(f"auction:{auction_id}", payload)
+
+    return auction
+
+
 async def end_auction(session: AsyncSession, auction_id: str, force: bool = False) -> Auction:
     async with session.begin():
         stmt = select(Auction).where(Auction.id == auction_id).with_for_update()
@@ -212,33 +356,6 @@ async def end_auction(session: AsyncSession, auction_id: str, force: bool = Fals
         auction = res.scalars().first()
         if not auction:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Auction not found")
-        # Determine winning bid
-        stmt = select(Bid).where(Bid.auction_id == auction_id, Bid.is_winning == True).with_for_update()
-        res = await session.execute(stmt)
-        winning = res.scalars().first()
-        if not winning and not force:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No winning bid to sell")
-
-        if winning:
-            # transfer player to team and update finances
-            stmt = select(Player).where(Player.id == auction.current_player_id).with_for_update()
-            res = await session.execute(stmt)
-            player = res.scalars().first()
-            if player:
-                player.team_id = winning.team_id
-                player.sold_price = winning.amount
-                player.status = "sold"
-                session.add(player)
-
-            # update team budget_spent
-            stmt = select(Team).where(Team.id == winning.team_id).with_for_update()
-            res = await session.execute(stmt)
-            team = res.scalars().first()
-            if team:
-                team.budget_spent = (team.budget_spent or 0) + winning.amount
-                session.add(team)
-
-            auction.total_revenue = (auction.total_revenue or 0) + (winning.amount or 0)
 
         auction.status = AuctionStatusEnum.COMPLETED.value
         auction.ended_at = datetime.utcnow()
@@ -251,7 +368,6 @@ async def end_auction(session: AsyncSession, auction_id: str, force: bool = Fals
         "type": "auction_ended",
         "auction_id": auction.id,
         "status": auction.status,
-        "winner_team_id": auction.current_bidder_id,
         "timestamp": datetime.utcnow().isoformat(),
     }
     await manager.broadcast_to_room(f"auction:{auction_id}", payload)

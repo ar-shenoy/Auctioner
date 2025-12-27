@@ -6,14 +6,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from uuid import uuid4
 from app.db.session import get_session
-from app.models import User
+from app.models import User, Team
 from app.schemas.auth import LoginRequest, LoginResponse, UserMeResponse, RegisterRequest
 from app.core.hash import verify_password, hash_password
 from app.core.security import create_access_token
 from app.dependencies.rbac import get_current_user
 from app.core.audit import log_audit
+from app.models.enums import RoleEnum
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+async def get_user_team_id(session: AsyncSession, user: User) -> str | None:
+    """Fetch team ID for a manager."""
+    if (user.role or "").lower() == RoleEnum.TEAM_MANAGER.value:
+        result = await session.execute(select(Team).where(Team.manager_id == user.id))
+        team = result.scalars().first()
+        return team.id if team else None
+    return None
 
 
 @router.post("/register", response_model=UserMeResponse, status_code=status.HTTP_201_CREATED)
@@ -59,6 +69,8 @@ async def register(
         details=f"role={user.role}",
     )
 
+    team_id = await get_user_team_id(session, user)
+
     return UserMeResponse(
         id=user.id,
         email=user.email,
@@ -66,6 +78,7 @@ async def register(
         full_name=user.full_name,
         role=user.role,
         is_active=user.is_active,
+        team_id=team_id,
     )
 
 
@@ -115,6 +128,8 @@ async def login(
         details=f"email={user.email}",
     )
     
+    team_id = await get_user_team_id(session, user)
+
     return LoginResponse(
         access_token=access_token,
         user={
@@ -124,6 +139,7 @@ async def login(
             "full_name": user.full_name,
             "role": user.role,
             "is_active": user.is_active,
+            "team_id": team_id,
         },
     )
 
@@ -131,11 +147,14 @@ async def login(
 @router.get("/me", response_model=UserMeResponse)
 async def get_me(
     current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ):
     """
     Get current authenticated user.
     Requires valid Bearer token.
     """
+    team_id = await get_user_team_id(session, current_user)
+
     return UserMeResponse(
         id=current_user.id,
         email=current_user.email,
@@ -143,4 +162,5 @@ async def get_me(
         full_name=current_user.full_name,
         role=current_user.role,
         is_active=current_user.is_active,
+        team_id=team_id,
     )

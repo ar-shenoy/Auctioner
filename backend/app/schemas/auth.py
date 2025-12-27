@@ -1,6 +1,8 @@
 """Authentication request/response schemas."""
 
 from pydantic import BaseModel, EmailStr
+from typing import Optional
+from uuid import UUID
 
 
 class LoginRequest(BaseModel):
@@ -36,6 +38,7 @@ class UserMeResponse(BaseModel):
     full_name: str | None
     role: str
     is_active: bool
+    team_id: Optional[UUID] = None
     
     class Config:
         from_attributes = True

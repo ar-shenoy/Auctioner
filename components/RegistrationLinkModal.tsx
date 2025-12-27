@@ -30,9 +30,9 @@ const RegistrationLinkModal: React.FC<RegistrationLinkModalProps> = ({ teams, on
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50" onClick={onClose}>
-      <div className="bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-lg border border-gray-700/50" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4" onClick={onClose}>
+      <div className="bg-gray-800 rounded-xl shadow-2xl p-4 sm:p-8 w-full max-w-lg border border-gray-700/50" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
           <h2 className="text-2xl font-bold text-white">Generate Registration Link</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

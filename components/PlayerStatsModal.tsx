@@ -8,57 +8,83 @@ interface PlayerStatsModalProps {
 }
 
 const StatItem: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
-  <div className="flex justify-between items-center py-3 px-4 bg-gray-700/50 rounded-lg">
-    <span className="text-gray-400 font-medium">{label}</span>
-    <span className="text-white font-bold text-lg">{value}</span>
+  <div className="flex justify-between items-center py-2 border-b border-gray-700/50 last:border-0">
+    <span className="text-gray-400 font-medium text-sm">{label}</span>
+    <span className="text-white font-semibold">{value}</span>
   </div>
 );
 
 const PlayerStatsModal: React.FC<PlayerStatsModalProps> = ({ player, onClose }) => {
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50"
-      onClick={onClose}
-    >
-      <div 
-        className="bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-2xl border border-gray-700/50 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-3xl font-bold text-white">{player.name}</h2>
-            <p className="text-gray-400">{player.role}</p>
-          </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-50 p-4" onClick={onClose}>
+        <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-700 overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-purple-900 to-gray-900 p-4 sm:p-6 flex justify-between items-start relative">
+                 <div className="flex flex-col sm:flex-row items-center sm:space-x-6 space-y-4 sm:space-y-0 text-center sm:text-left w-full sm:w-auto">
+                     <div className="h-24 w-24 rounded-full border-4 border-yellow-400 bg-gray-700 overflow-hidden shadow-lg flex-shrink-0">
+                        {player.profile_photo_url ? (
+                            <img src={player.profile_photo_url} className="w-full h-full object-cover" alt="" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-gray-500">{player.name.charAt(0)}</div>
+                        )}
+                     </div>
+                     <div>
+                         <h2 className="text-3xl font-bold text-white leading-tight">{player.name}</h2>
+                         <div className="flex items-center space-x-2 mt-1">
+                             <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wider">{player.role}</span>
+                             {player.is_approved && <span className="text-green-400 text-xs flex items-center">
+                                 <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                                 Verified
+                             </span>}
+                         </div>
+                         <p className="text-gray-400 text-sm mt-2 flex items-center">
+                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                             {player.city || 'Unknown City'}, {player.state || 'Unknown State'}
+                         </p>
+                     </div>
+                 </div>
+                 <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                 </button>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <h3 className="text-xl font-semibold text-blue-400 border-b border-gray-700 pb-2 mb-3">Player Details</h3>
-            <StatItem label="Base Price" value={`$${player.base_price.toLocaleString()}`} />
-            <StatItem label="Status" value={player.status} />
-            <StatItem label="Team ID" value={player.team_id ? player.team_id.substring(0, 8) + '...' : 'Unassigned'} />
-          </div>
-          <div className="space-y-3">
-             <h3 className="text-xl font-semibold text-green-400 border-b border-gray-700 pb-2 mb-3">Auction Details</h3>
-             <div className="space-y-2">
-                {player.matchHistory.length > 0 ? player.matchHistory.map((perf, index) => (
-                    <div key={index} className="bg-gray-700/50 p-3 rounded-lg text-sm">
-                        <p>vs Match #{perf.matchId.slice(-4)}</p>
-                        <div className="flex justify-between">
-                            <span>Runs: <strong>{perf.runsScored} ({perf.ballsFaced})</strong></span>
-                            <span>Wickets: <strong>{perf.wicketsTaken}-{perf.runsConceded}</strong></span>
-                        </div>
-                    </div>
-                )) : <p className="text-gray-500 text-center p-4">No match history available.</p>}
-             </div>
-          </div>
+            <div className="p-4 sm:p-8 overflow-y-auto">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-4 sm:mb-8">
+                     <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-700/50">
+                         <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-3">Cricket Profile</h3>
+                         <div className="space-y-1">
+                             <StatItem label="Batting Style" value={player.batting_style?.replace('_', ' ').toUpperCase() || 'N/A'} />
+                             <StatItem label="Bowling Style" value={player.bowling_style?.replace('_', ' ').toUpperCase() || 'N/A'} />
+                         </div>
+                     </div>
+                      <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-700/50">
+                         <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-3">Auction Info</h3>
+                         <div className="space-y-1">
+                             <StatItem label="Base Price" value={`₹${(player.base_price/100000).toFixed(1)} Lakhs`} />
+                             <StatItem label="Current Status" value={player.status.toUpperCase()} />
+                             {player.phone_number && <StatItem label="Phone" value={player.phone_number} />}
+                         </div>
+                     </div>
+                 </div>
+
+                 <div>
+                      <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-3">Career Statistics (Declared)</h3>
+                      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                          <div className="bg-gray-700/50 p-2 sm:p-4 rounded-xl text-center border border-gray-700/50">
+                              <p className="text-2xl sm:text-3xl font-black text-white">{player.matches_played || 0}</p>
+                              <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Matches</p>
+                          </div>
+                           <div className="bg-gray-700/50 p-4 rounded-xl text-center border border-gray-700/50">
+                              <p className="text-2xl sm:text-3xl font-black text-white">{player.runs_scored || 0}</p>
+                              <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Runs</p>
+                          </div>
+                           <div className="bg-gray-700/50 p-4 rounded-xl text-center border border-gray-700/50">
+                              <p className="text-2xl sm:text-3xl font-black text-white">{player.wickets_taken || 0}</p>
+                              <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mt-1">Wickets</p>
+                          </div>
+                      </div>
+                 </div>
+            </div>
         </div>
-      </div>
     </div>
   );
 };

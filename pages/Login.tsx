@@ -28,8 +28,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-900">
-      <div className="w-full max-w-md p-8 space-y-8 bg-gray-800 rounded-xl shadow-lg border border-gray-700/50">
+    <div className="flex items-center justify-center h-screen bg-gray-900 p-4">
+      <div className="w-full max-w-md p-4 sm:p-8 space-y-6 sm:space-y-8 bg-gray-800 rounded-xl shadow-lg border border-gray-700/50">
         <div className="text-center">
             <h1 className="text-3xl font-bold text-white">Cricket Ops Platform</h1>
             <p className="mt-2 text-gray-400">Please sign in to continue</p>
