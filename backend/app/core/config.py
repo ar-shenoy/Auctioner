@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     
     # CORS settings - read from environment, parse comma-separated string
     cors_origins_str: str = Field(
-        default="*",
+        default="https://auctioner-one.vercel.app,*",
         alias="CORS_ORIGINS"
     )
     
