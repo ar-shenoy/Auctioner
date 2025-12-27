@@ -96,7 +96,7 @@ const AdminDashboard: React.FC<DashboardProps> = ({ players, teams, onDataChange
                                     <tr key={player.id} className="hover:bg-gray-800/50 transition-colors">
                                         <td className="px-4 py-3 font-semibold text-white">{player.name}</td>
                                         <td className="px-4 py-3">{player.role}</td>
-                                        <td className="px-4 py-3">₹{player.base_price.toLocaleString()}</td>
+                                        <td className="px-4 py-3">₹{(player.base_price || 0).toLocaleString()}</td>
                                         <td className="px-4 py-3">{player.phone_number}</td>
                                         <td className="px-4 py-3 text-right space-x-2">
                                             <button
@@ -142,7 +142,7 @@ const AdminDashboard: React.FC<DashboardProps> = ({ players, teams, onDataChange
                                             <p className="text-xs text-gray-400 uppercase">{player.role} • {player.is_approved ? <span className="text-green-400">Approved</span> : <span className="text-yellow-500">Pending</span>}</p>
                                         </div>
                                     </div>
-                                    <span className="font-mono text-green-400 font-bold">₹{(player.base_price/100000).toFixed(1)}L</span>
+                                    <span className="font-mono text-green-400 font-bold">₹{((player.base_price || 0)/100000).toFixed(1)}L</span>
                                 </li>
                             ))}
                         </ul>

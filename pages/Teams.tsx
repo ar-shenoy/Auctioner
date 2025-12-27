@@ -102,10 +102,10 @@ const Teams: React.FC<TeamsProps> = ({ teams, players, currentUser, onDataChange
                             <div>
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-gray-400">Budget Used</span>
-                                    <span className="text-green-400 font-mono">₹{(team.budget_spent/10000000).toFixed(2)}Cr</span>
+                                    <span className="text-green-400 font-mono">₹{((team.budget_spent || 0)/10000000).toFixed(2)}Cr</span>
                                 </div>
                                 <div className="w-full bg-gray-700 rounded-full h-1.5">
-                                    <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${(team.budget_spent / 1000000000) * 100}%` }}></div>
+                                    <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${((team.budget_spent || 0) / 1000000000) * 100}%` }}></div>
                                 </div>
                             </div>
                         </div>
@@ -164,11 +164,11 @@ const Teams: React.FC<TeamsProps> = ({ teams, players, currentUser, onDataChange
                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                              <div className="bg-gray-800 p-3 rounded-lg">
                                  <p className="text-xs text-gray-500 uppercase font-bold">Total Spent</p>
-                                 <p className="text-green-400 font-mono text-xl">₹{(selectedTeam.budget_spent/10000000).toFixed(2)}Cr</p>
+                                 <p className="text-green-400 font-mono text-xl">₹{((selectedTeam.budget_spent || 0)/10000000).toFixed(2)}Cr</p>
                              </div>
                              <div className="bg-gray-800 p-3 rounded-lg">
                                  <p className="text-xs text-gray-500 uppercase font-bold">Remaining</p>
-                                 <p className="text-blue-400 font-mono text-xl">₹{((1000000000 - selectedTeam.budget_spent)/10000000).toFixed(2)}Cr</p>
+                                 <p className="text-blue-400 font-mono text-xl">₹{((1000000000 - (selectedTeam.budget_spent || 0))/10000000).toFixed(2)}Cr</p>
                              </div>
                               <div className="bg-gray-800 p-3 rounded-lg">
                                  <p className="text-xs text-gray-500 uppercase font-bold">Squad Size</p>
