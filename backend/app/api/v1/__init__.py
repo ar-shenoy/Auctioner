@@ -6,4 +6,3 @@ from . import admin  # noqa: F401
 from . import teams  # noqa: F401
 from . import players  # noqa: F401
 from . import auctions  # noqa: F401
-from . import matches  # noqa: F401

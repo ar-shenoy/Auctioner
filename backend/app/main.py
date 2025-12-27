@@ -22,16 +22,13 @@ from app.models import (
     Player,
     Auction,
     Bid,
-    Match,
-    MatchEvent,
 )
 from app.api.v1 import admin as admin_api
 from app.api.v1 import auth as auth_api
 from app.api.v1 import teams as teams_api
 from app.api.v1 import players as players_api
 from app.api.v1 import auctions as auctions_api
-from app.api.v1 import matches as matches_api
-from app.websocket.endpoints import websocket_auction_endpoint, websocket_match_endpoint
+from app.websocket.endpoints import websocket_auction_endpoint
 
 
 logger = logging.getLogger(__name__)
@@ -179,7 +176,6 @@ app.include_router(admin_api.router, prefix="/api/v1")
 app.include_router(teams_api.router, prefix="/api/v1")
 app.include_router(players_api.router, prefix="/api/v1")
 app.include_router(auctions_api.router, prefix="/api/v1")
-app.include_router(matches_api.router, prefix="/api/v1")
 
 # ==================== WebSocket Routes ====================
 
@@ -194,17 +190,4 @@ async def ws_auction_endpoint(websocket, auction_id: str):
         await websocket.close(code=1008, reason="Missing token")
         return
     await websocket_auction_endpoint(websocket, auction_id, token)
-
-
-@app.websocket("/ws/matches/{match_id}")
-async def ws_match_endpoint(websocket, match_id: str):
-    """WebSocket endpoint for match real-time updates. Read-only, JWT-protected.
-    
-    Client must pass JWT token as query parameter: ?token=<jwt_token>
-    """
-    token = websocket.query_params.get("token")
-    if not token:
-        await websocket.close(code=1008, reason="Missing token")
-        return
-    await websocket_match_endpoint(websocket, match_id, token)
 

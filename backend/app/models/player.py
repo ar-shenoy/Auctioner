@@ -74,15 +74,6 @@ class Player(BaseModel):
         back_populates="player",
         cascade="all, delete-orphan",
     )
-    match_stats = relationship(
-        "PlayerMatchStats",
-        cascade="all, delete-orphan",
-    )
-    career_stats = relationship(
-        "PlayerCareerStats",
-        uselist=False,
-        cascade="all, delete-orphan",
-    )
     
     __table_args__ = (
         Index("idx_player_status", "status"),

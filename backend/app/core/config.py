@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     
     # CORS settings - read from environment, parse comma-separated string
     cors_origins_str: str = Field(
-        default="http://localhost:3000,http://localhost:5173",
+        default="*",
         alias="CORS_ORIGINS"
     )
     
